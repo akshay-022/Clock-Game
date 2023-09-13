@@ -9,6 +9,16 @@ class Node:
     letter: str
     w: int = 0
     N: int = 0
+class Tree:
+    def __init__(self, root: "Node"):
+        self.nodes = {root.state.tobytes(): root}
+    def add(self, node = "Node"):
+        self.nodes[node.state.tobytes()] = node
+    def get(self, state: list[str]):
+        flat_state = state.tobytes()
+        if flat_state not in self.nodes:
+            return None
+        return self.nodes[flat_state]
 
 class Player:
     def __init__(self, rng: np.random.Generator) -> None:
@@ -48,27 +58,30 @@ class Player:
     def risky_versus_safe():
         pass
 
-    def montecarlo_simulation():
-        while 'Z' in state:
+    def MCTS(cards: list[str], constraints: list[str], state: list[str], territory: list[int], rollouts: int):
+        tree = Tree(Node(state, None, 24, 'Z', 0, 1))
+        tree = expand(tree, cards, state)
+        for i range(rollouts):
+            # simulate()
             # choose random letters to place until game is finished
-        pass
+        return tree
 
-    def successors(cards: list[str], state: list[str]) -> list[state]:
-        succ = []
+    def expand(tree: "Tree", cards: list[str], state: list[str]):
         for letter in cards:
             # add our letters in every hour available
             for i in range (0,12):
                 new_state = np.copy(state)
-                if new_state[i] == 'Z':
+                if state[i] == 'Z':
                     new_state[i] = letter
-                elif new_state[i] != 'Z' and new_state[i+12] == 'Z':
+                elif new_state[i+12] == 'Z':
                     # if hour already occupied, try index + 12
                     new_state[i+12] = letter
                 else:
                     # if both slots of hour already occupied, continue
                     continue
-                succ.append(new_state)
-        return succ
+            hour = 12 if i = 0 else i
+            tree.add(Node(new_state, tree.get(state), hour, letter, 0, 0))
+        return tree
 
     def utility():
         pass
