@@ -5,9 +5,10 @@ from typing import Tuple, List
 class Node:
     state: list(str)
     parent: "Node"
+    children: list("Node")
     hour: int
     letter: str
-    w: int = 0
+    score: int = 0
     N: int = 0
 class Tree:
     def __init__(self, root: "Node"):
@@ -15,6 +16,8 @@ class Tree:
         self.size = 1
     def add(self, node = "Node"):
         self.nodes[node.state.tobytes()] = node
+        parent = tree.get(node.parent)
+        parent.children.append(node)
         self.size += 1
     def get(self, state: list[str]):
         flat_state = state.tobytes()
@@ -61,14 +64,61 @@ class Player:
         pass
 
     def MCTS(cards: list[str], constraints: list[str], state: list[str], territory: list[int], rollouts: int):
-        tree = Tree(Node(state, None, 24, 'Z', 0, 1))
+        # MCTS main loop: Execute MCTS steps rollouts number of times
+        # Then return successor with highest number of rollouts
+        tree = Tree(Node(state, None, children=[], 24, 'Z', 0, 1))
         tree = expand(tree, cards, state)
+        available_letters = [] # append all the letters that have not been played yet
+        
         for i range(rollouts):
-            # simulate()
-            # choose random letters to place until game is finished
-        return tree
+            move = select(tree, state, alpha)
+            tree = simulate(tree, move, constraints, available_letters)
 
+        nxt = None
+        plays = 0
+        
+        for succ in tree.root.children:
+            if succ.N > plays:
+                plays = succ.N
+                nxt = succ
+        return succ
+
+    def select(tree: "Tree", state: list[str], alpha: float = 1):
+    """Starting from state, move to child node with the
+    highest UCT value.
+
+    Args:
+        tree ("Tree"): the search tree
+        state (list[str]): the clock game state
+        alpha (float): exploration parameter [PERHAPS THIS CAN BE DETERMINED IN RISKY_VS_SAFE()?]
+    Returns:
+        state: the clock game state after best UCT move
+    """
+
+    cur_node = tree.get(state)
+    max_UCT = 0.0
+    move = state
+
+    for child_state in root.children:
+        node_UCT = (child_state.score/child_state.N + alpha*numpy.sqrt(root.N/child_state.N))
+        if node_UCT > max_UCT:
+            max_UCT = node_UCT
+            move = child_state
+            
+    return move
+    
     def expand(tree: "Tree", cards: list[str], state: list[str]):
+        """Add all children nodes of state into the tree and return
+        tree.
+
+        Args:
+            tree ("Tree"): the search tree
+            cards (list[str]): cards from our player
+            state (list[str]): the clock game state
+        Returns:
+            "Tree": the tree after insertion
+        """
+        
         for letter in cards:
             # add our letters in every hour available
             for i in range (0,12):
@@ -82,7 +132,36 @@ class Player:
                     # if both slots of hour already occupied, continue
                     continue
             hour = 12 if i = 0 else i
-            tree.add(Node(new_state, tree.get(state), hour, letter, 0, 0))
+            tree.add(Node(new_state, root, children=[], hour, letter, 0, 0))
+        return tree
+
+    
+    def simulate(tree: "Tree", state: list[str], constraints: list[str], remaining_cards):
+        """Run one game rollout from state to a terminal state using random
+        playout policy and return the numerical utility of the result.
+
+        Args:
+            tree ("Tree): the search tree
+            state (list[str]): the clock game state
+            constraints (list[str]): constraints our player wants to satisfy
+            remaining_cards (list[str]): cards from all players not yet played
+
+        Returns:
+            "Tree": the search tree with updated scores
+        """
+        new_state = np.copy(state)
+        while len(remaining_cards):
+            # follow random playout policy until the end
+            # remaining_cards.pop(random.randint(len(remaining_cards) - 1))
+        
+        score = utility()
+        
+        cur_node = tree.get(state)
+        cur_node.score += score
+        cur_node.N += 1
+        tree.root.score += score
+        tree.root.N += 1
+        
         return tree
 
     def utility():
