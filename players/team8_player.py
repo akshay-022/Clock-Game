@@ -12,8 +12,10 @@ class Node:
 class Tree:
     def __init__(self, root: "Node"):
         self.nodes = {root.state.tobytes(): root}
+        self.size = 1
     def add(self, node = "Node"):
-        self.nodes[node.state.tobytes()] = node
+        self.nodes[node.state.tobytes()] = nodes
+        self.size += 1
     def get(self, state: list[str]):
         flat_state = state.tobytes()
         if flat_state not in self.nodes:
