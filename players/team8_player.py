@@ -2,6 +2,13 @@ from tokenize import String
 import numpy as np
 from typing import Tuple, List
 
+class Node:
+    state: list(str)
+    parent: "Node"
+    hour: int
+    letter: str
+    w: int = 0
+    N: int = 0
 
 class Player:
     def __init__(self, rng: np.random.Generator) -> None:
