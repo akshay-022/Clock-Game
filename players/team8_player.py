@@ -49,7 +49,26 @@ class Player:
         pass
 
     def montecarlo_simulation():
+        while 'Z' in state:
+            # choose random letters to place until game is finished
         pass
+
+    def successors(cards: list[str], state: list[str]) -> list[state]:
+        succ = []
+        for letter in cards:
+            # add our letters in every hour available
+            for i in range (0,12):
+                new_state = np.copy(state)
+                if new_state[i] == 'Z':
+                    new_state[i] = letter
+                elif new_state[i] != 'Z' and new_state[i+12] == 'Z':
+                    # if hour already occupied, try index + 12
+                    new_state[i+12] = letter
+                else:
+                    # if both slots of hour already occupied, continue
+                    continue
+                succ.append(new_state)
+        return succ
 
     def utility():
         pass
