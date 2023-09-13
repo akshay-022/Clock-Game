@@ -14,7 +14,7 @@ class Tree:
         self.nodes = {root.state.tobytes(): root}
         self.size = 1
     def add(self, node = "Node"):
-        self.nodes[node.state.tobytes()] = nodes
+        self.nodes[node.state.tobytes()] = node
         self.size += 1
     def get(self, state: list[str]):
         flat_state = state.tobytes()
