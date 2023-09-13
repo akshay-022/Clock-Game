@@ -1,31 +1,31 @@
 The game.....has started.
-Move 1 : player 0 ,time 0.0s, C at 4
-Move 2 : player 1 ,time 0.0008130073547363281s, W at 8
-Move 3 : player 2 ,time 0.00016999244689941406s, X at 2
-Move 4 : player 0 ,time 0.0s, M at 6
-Move 5 : player 1 ,time 0.00020503997802734375s, U at 3
-Move 6 : player 2 ,time 0.0001499652862548828s, F at 9
-Move 7 : player 0 ,time 0.0s, O at 3
-Move 8 : player 1 ,time 0.00016117095947265625s, B at 10
-Move 9 : player 2 ,time 0.00014090538024902344s, D at 2
-Move 10 : player 0 ,time 0.0s, E at 5
-Move 11 : player 1 ,time 0.00015687942504882812s, H at 12
-Move 12 : player 2 ,time 0.000141143798828125s, J at 1
-Move 13 : player 0 ,time 0.0s, K at 5
-Move 14 : player 1 ,time 0.00015997886657714844s, R at 12
-Move 15 : player 2 ,time 0.0001399517059326172s, T at 4
-Move 16 : player 0 ,time 0.0s, V at 8
-Move 17 : player 1 ,time 0.0001499652862548828s, L at 11
-Move 18 : player 2 ,time 0.0001430511474609375s, Q at 11
-Move 19 : player 0 ,time 0.0s, S at 6
-Move 20 : player 1 ,time 0.00015616416931152344s, P at 7
-Move 21 : player 2 ,time 0.000141143798828125s, N at 7
-Move 22 : player 0 ,time 0.0s, A at 1
-Move 23 : player 1 ,time 0.00014901161193847656s, I at 9
-Move 24 : player 2 ,time 0.000141143798828125s, G at 10
-Player 1 has score -2 with satistied constraints [] unsatisfied constraints ['U<O<C', 'U<X<L<T'] and initial constraints ['B<E', 'U<O<C', 'U<X<L<T', 'W<O<A<M<Q', 'H<M']
-Player 2 has score -2 with satistied constraints ['W<F'] unsatisfied constraints ['R<S<K<I', 'U<E<N<H<G', 'E<Q'] and initial constraints ['W<F', 'H<A<W', 'R<S<K<I', 'U<E<N<H<G', 'E<Q']
+Move 1 : player 0 ,time 0.0s, E at 9
+Move 2 : player 1 ,time 0.0007140636444091797s, W at 8
+Move 3 : player 2 ,time 0.0002300739288330078s, X at 2
+Move 4 : player 0 ,time 0.0s, C at 3
+Move 5 : player 1 ,time 0.0002911090850830078s, U at 4
+Move 6 : player 2 ,time 0.00019097328186035156s, F at 9
+Move 7 : player 0 ,time 0.0s, M at 3
+Move 8 : player 1 ,time 0.0012631416320800781s, B at 7
+Move 9 : player 2 ,time 0.0002219676971435547s, D at 1
+Move 10 : player 0 ,time 0.0s, S at 4
+Move 11 : player 1 ,time 0.00023484230041503906s, H at 12
+Move 12 : player 2 ,time 5.3882598876953125e-05s, J at 5
+Move 13 : player 0 ,time 0.0s, O at 6
+Move 14 : player 1 ,time 0.0005340576171875s, R at 12
+Move 15 : player 2 ,time 0.000225067138671875s, T at 2
+Move 16 : player 0 ,time 0.0s, K at 6
+Move 17 : player 1 ,time 0.0006070137023925781s, L at 11
+Move 18 : player 2 ,time 0.0001480579376220703s, Q at 11
+Move 19 : player 0 ,time 0.0s, V at 7
+Move 20 : player 1 ,time 0.0005266666412353516s, P at 5
+Move 21 : player 2 ,time 0.00024390220642089844s, N at 1
+Move 22 : player 0 ,time 0.0s, A at 10
+Move 23 : player 1 ,time 0.0005939006805419922s, I at 8
+Move 24 : player 2 ,time 7.987022399902344e-05s, G at 10
+Player 1 has score -2 with satistied constraints [] unsatisfied constraints ['U<X<L<T', 'W<O<A<M<Q'] and initial constraints ['B<E', 'U<O<C', 'U<X<L<T', 'W<O<A<M<Q', 'H<M']
+Player 2 has score 7 with satistied constraints ['W<F', 'R<S<K<I', 'E<Q'] unsatisfied constraints ['U<E<N<H<G'] and initial constraints ['W<F', 'H<A<W', 'R<S<K<I', 'U<E<N<H<G', 'E<Q']
 Player 3 has score -3 with satistied constraints [] unsatisfied constraints ['R<A<I', 'C<Q<R<I<D', 'J<N'] and initial constraints ['D<T', 'R<A<I', 'U<D<X<P', 'C<Q<R<I<D', 'J<N']
-No winner here it's a tie. Or maybe you both (or all of you) are the winners!!
-Time taken by player 1, 2 and 3 to choose : [0, 3.910064697265625e-05, 1.5974044799804688e-05]
-Total time taken by player 1, 2 and 3 to decide moves : [0.0, 0.0019512176513671875, 0.00116729736328125]
+Congratulations Player 2 you are the winner!!!
+Time taken by player 1, 2 and 3 to choose : [0, 0.000125885009765625, 2.09808349609375e-05]
+Total time taken by player 1, 2 and 3 to decide moves : [0.0, 0.0047647953033447266, 0.0013937950134277344]
