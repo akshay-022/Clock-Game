@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if [[ $1 == "True" ]] ; then
-    python3 clock_game.py -ng True
+	python clock_game.py -ng $1 -s $2
 else
-    python3 clock_gui.py &
-    sleep 1
-    python3 clock_game.py &
+	python clock_gui.py -s $2 &
+	sleep 1
+	python clock_game.py -s $2 &
 fi
