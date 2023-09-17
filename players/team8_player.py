@@ -165,7 +165,31 @@ class Player:
         return tree
 
     def utility(constraints: list[str], final_state: list[str]):
-        pass
+        """Utility function that returns player's score after a single monte carlo simulation
+        
+        Args:
+            final_state (list(str)): The simulated letters at every hour of the 24 hour clock
+            constraints(list(str)): The constraints assigned to the given player
+
+        Returns:
+            int: player's core after a single monte carlo simulation
+        """
+        score_value_list = [1,3,6,12]  #points for satisfying constraints on different lengths
+        score = 0
+        for i in range(len(constraints):
+            list_of_letters = constraints[i].split("<")
+            constraint_true_indic = True
+            for j in range(len(list_of_letters)-1):
+                distance_difference = (final_state.index(list_of_letters[j+1]])%12) - (final_state.index(list_of_letters[j])%12)
+                if distance_difference < 0:
+                    distance_difference = distance_difference + 12
+                if not (distance_difference <=5 and distance_difference > 0):
+                    constraint_true_indic = False
+                if constraint_true_indic == False:
+                    score = score - 1
+                else:
+                    score = score + score_value_list[len(list_of_letters) - 2]
+        return score
 
     # def play(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int]) -> Tuple[int, str]:
 
@@ -175,7 +199,7 @@ class Player:
         Args:
             score (int): Your total score including current turn
             cards (list): A list of letters you have been given at the beginning of the game
-            state (list(list)): The current letters at every hour of the 24 hour clock
+            state (list(str)): The current letters at every hour of the 24 hour clock
             territory (list(int)): The current occupiers of every slot in the 24 hour clock. 1,2,3 for players 1,2 and 3. 4 if position unoccupied.
             constraints(list(str)): The constraints assigned to the given player
 
