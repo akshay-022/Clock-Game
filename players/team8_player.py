@@ -16,7 +16,7 @@ class Tree:
         self.size = 1
     def add(self, node = "Node"):
         self.nodes[node.state.tobytes()] = node
-        parent = tree.get(node.parent)
+        parent = self.get(node.parent)
         parent.children.append(node)
         self.size += 1
     def get(self, state: list[str]):
@@ -53,7 +53,6 @@ class Player:
             list[int]: Return the list of constraint cards that you wish to keep. (can look at the default player logic to understand.)
         """
         final_constraints = []
-        # print(constraints)
 
         for i in range(len(constraints)):
             if self.rng.random() <= 0.5:
@@ -62,50 +61,56 @@ class Player:
 
     def risky_versus_safe():
         pass
-
-    def MCTS(cards: list[str], constraints: list[str], state: list[str], territory: list[int], rollouts: int = 50000):
-        # MCTS main loop: Execute MCTS steps rollouts number of times
-        # Then return successor with highest number of rollouts
-        tree = Tree(Node(state, None, children=[], 24, 'Z', 0, 1))
-        tree = expand(tree, cards, state)
-        available_letters = [] # append all the letters that have not been played yet
+    
+    def utility(constraints: list[str], final_state: list[str]):
+        """Utility function that returns player's score after a single monte carlo simulation
         
-        for i range(rollouts):
-            move = select(tree, state, alpha)
-            tree = simulate(tree, move, constraints, available_letters)
+        Args:
+            final_state (list(str)): The simulated letters at every hour of the 24 hour clock
+            constraints(list(str)): The constraints assigned to the given player
 
-        nxt = None
-        plays = 0
-        
-        for succ in tree.root.children:
-            if succ.N > plays:
-                plays = succ.N
-                nxt = succ
-        return succ
-
+        Returns:
+            int: player's core after a single monte carlo simulation
+        """
+        score_value_list = [1,3,6,12]  #points for satisfying constraints on different lengths
+        score = 0
+        for i in range(len(constraints)):
+            list_of_letters = constraints[i].split("<")
+            constraint_true_indic = True
+            for j in range(len(list_of_letters)-1):
+                distance_difference = (final_state.index(list_of_letters[j+1])%12) - (final_state.index(list_of_letters[j])%12)
+                if distance_difference < 0:
+                    distance_difference = distance_difference + 12
+                if not (distance_difference <=5 and distance_difference > 0):
+                    constraint_true_indic = False
+                if constraint_true_indic == False:
+                    score = score - 1
+                else:
+                    score = score + score_value_list[len(list_of_letters) - 2]
+        return score
+    
     def select(tree: "Tree", state: list[str], alpha: float = 1):
-    """Starting from state, move to child node with the
-    highest UCT value.
+        """Starting from state, move to child node with the
+        highest UCT value.
 
-    Args:
-        tree ("Tree"): the search tree
-        state (list[str]): the clock game state
-        alpha (float): exploration parameter [PERHAPS THIS CAN BE DETERMINED IN RISKY_VS_SAFE()?]
-    Returns:
-        state: the clock game state after best UCT move
-    """
+        Args:
+            tree ("Tree"): the search tree
+            state (list[str]): the clock game state
+            alpha (float): exploration parameter [PERHAPS THIS CAN BE DETERMINED IN RISKY_VS_SAFE()?]
+        Returns:
+            state: the clock game state after best UCT move
+        """
 
-    cur_node = tree.get(state)
-    max_UCT = 0.0
-    move = state
+        max_UCT = 0.0
+        move = state
 
-    for child_state in root.children:
-        node_UCT = (child_state.score/child_state.N + alpha*numpy.sqrt(root.N/child_state.N))
-        if node_UCT > max_UCT:
-            max_UCT = node_UCT
-            move = child_state
+        for child_state in tree.root.children:
+            node_UCT = (child_state.score/child_state.N + alpha*np.sqrt(tree.root.N/child_state.N))
+            if node_UCT > max_UCT:
+                max_UCT = node_UCT
+                move = child_state
             
-    return move
+        return move
     
     def expand(tree: "Tree", cards: list[str], state: list[str]):
         """Add all children nodes of state into the tree and return
@@ -131,8 +136,8 @@ class Player:
                 else:
                     # if both slots of hour already occupied, continue
                     continue
-            hour = 12 if i = 0 else i
-            tree.add(Node(new_state, root, children=[], hour, letter, 0, 1))
+            hour = 12 if i == 0 else i
+            tree.add(Node(new_state, tree.root, [], hour, letter, 0, 1))
         return tree
 
     
@@ -151,10 +156,10 @@ class Player:
         """
         new_state = np.copy(state)
         while len(remaining_cards):
-            # follow random playout policy until the end
-            # remaining_cards.pop(random.randint(len(remaining_cards) - 1))
+            rand_letter = remaining_cards.pop(random.randint(len(remaining_cards) - 1))
+
         
-        score = utility()
+        score = utility(constraints, new_state)
         
         cur_node = tree.get(state)
         cur_node.score += score
@@ -164,32 +169,25 @@ class Player:
         
         return tree
 
-    def utility(constraints: list[str], final_state: list[str]):
-        """Utility function that returns player's score after a single monte carlo simulation
+    def MCTS(cards: list[str], constraints: list[str], state: list[str], territory: list[int], rollouts: int = 50000):
+        # MCTS main loop: Execute MCTS steps rollouts number of times
+        # Then return successor with highest number of rollouts
+        tree = Tree(Node(state, None, [], 24, 'Z', 0, 1))
+        tree = expand(tree, cards, state)
+        available_letters = [] # append all the letters that have not been played yet
         
-        Args:
-            final_state (list(str)): The simulated letters at every hour of the 24 hour clock
-            constraints(list(str)): The constraints assigned to the given player
+        for i in range(rollouts):
+            move = select(tree, state)
+            tree = simulate(tree, move, constraints, available_letters)
 
-        Returns:
-            int: player's core after a single monte carlo simulation
-        """
-        score_value_list = [1,3,6,12]  #points for satisfying constraints on different lengths
-        score = 0
-        for i in range(len(constraints):
-            list_of_letters = constraints[i].split("<")
-            constraint_true_indic = True
-            for j in range(len(list_of_letters)-1):
-                distance_difference = (final_state.index(list_of_letters[j+1]])%12) - (final_state.index(list_of_letters[j])%12)
-                if distance_difference < 0:
-                    distance_difference = distance_difference + 12
-                if not (distance_difference <=5 and distance_difference > 0):
-                    constraint_true_indic = False
-                if constraint_true_indic == False:
-                    score = score - 1
-                else:
-                    score = score + score_value_list[len(list_of_letters) - 2]
-        return score
+        nxt = None
+        plays = 0
+        
+        for succ in tree.root.children:
+            if succ.N > plays:
+                plays = succ.N
+                nxt = succ
+        return nxt    
 
     # def play(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int]) -> Tuple[int, str]:
 
@@ -213,5 +211,5 @@ class Player:
         # because np.where returns a tuple containing the array, not the array itself
         # hour = self.rng.choice(available_hours[0])
         # hour = hour % 12 if hour % 12 != 0 else 12
-        move = MCST(cards, constraints, state, territory)
+        move = MCTS(cards, constraints, state, territory)
         return move.hour, move.letter
