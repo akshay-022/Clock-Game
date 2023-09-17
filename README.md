@@ -42,16 +42,18 @@ pip install -r requirements.txt
 ### Simulator
 
 ```bash
-bash clock_game.sh
+bash clock_game.sh False seed_number
 ```
 
 Simulator Scheme : Player 1 always plays in black, player 2 always plays in blue, and player 3 always plays in red.
 All entries in the clock will be masked if a player has not chosen their constraints yet.
 
+If you decide to end the simulator prematurely, press Control+D to terminate the bash script and then run your next command.
+
 ### Running without Simulator
 
 ```bash
-bash clock_game.sh True
+bash clock_game.sh True seed_number
 ```
 
 You can change the random seed, number of constraints per player and timeout by changing the values inside constants.py.
