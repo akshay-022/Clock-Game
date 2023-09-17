@@ -63,7 +63,7 @@ class Player:
     def risky_versus_safe():
         pass
 
-    def MCTS(cards: list[str], constraints: list[str], state: list[str], territory: list[int], rollouts: int):
+    def MCTS(cards: list[str], constraints: list[str], state: list[str], territory: list[int], rollouts: int = 50000):
         # MCTS main loop: Execute MCTS steps rollouts number of times
         # Then return successor with highest number of rollouts
         tree = Tree(Node(state, None, children=[], 24, 'Z', 0, 1))
@@ -132,7 +132,7 @@ class Player:
                     # if both slots of hour already occupied, continue
                     continue
             hour = 12 if i = 0 else i
-            tree.add(Node(new_state, root, children=[], hour, letter, 0, 0))
+            tree.add(Node(new_state, root, children=[], hour, letter, 0, 1))
         return tree
 
     
@@ -164,7 +164,7 @@ class Player:
         
         return tree
 
-    def utility():
+    def utility(constraints: list[str], final_state: list[str]):
         pass
 
     # def play(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int]) -> Tuple[int, str]:
@@ -182,13 +182,12 @@ class Player:
         Returns:
             Tuple[int, str]: Return a tuple of slot from 1-12 and letter to be played at that slot
         """
-        # Do we want intermediate scores also available? Confirm pls
-        print(state)
-        print(territory)
-        letter = self.rng.choice(cards)
+        
+        # letter = self.rng.choice(cards)
         territory_array = np.array(territory)
         available_hours = np.where(territory_array == 4)
         # because np.where returns a tuple containing the array, not the array itself
-        hour = self.rng.choice(available_hours[0])
-        hour = hour % 12 if hour % 12 != 0 else 12
-        return hour, letter
+        # hour = self.rng.choice(available_hours[0])
+        # hour = hour % 12 if hour % 12 != 0 else 12
+        move = MCST(cards, constraints, state, territory)
+        return move.hour, move.letter
