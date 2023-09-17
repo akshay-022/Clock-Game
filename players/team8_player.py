@@ -1,5 +1,6 @@
 from tokenize import String
 import numpy as np
+import random
 from typing import Tuple, List
 
 class Node:
@@ -59,10 +60,10 @@ class Player:
                 final_constraints.append(constraints[i])
         return final_constraints
 
-    def risky_versus_safe():
+    def __risky_versus_safe():
         pass
     
-    def utility(constraints: list[str], final_state: list[str]):
+    def __utility(self, constraints: list[str], final_state: list[str]):
         """Utility function that returns player's score after a single monte carlo simulation
         
         Args:
@@ -89,7 +90,7 @@ class Player:
                     score = score + score_value_list[len(list_of_letters) - 2]
         return score
     
-    def select(tree: "Tree", state: list[str], alpha: float = 1):
+    def __select(self, tree: "Tree", state: list[str], alpha: float = 1):
         """Starting from state, move to child node with the
         highest UCT value.
 
@@ -112,7 +113,7 @@ class Player:
             
         return move
     
-    def expand(tree: "Tree", cards: list[str], state: list[str]):
+    def __expand(self, tree: "Tree", cards: list[str], state: list[str]):
         """Add all children nodes of state into the tree and return
         tree.
 
@@ -141,7 +142,7 @@ class Player:
         return tree
 
     
-    def simulate(tree: "Tree", state: list[str], constraints: list[str], remaining_cards):
+    def __simulate(self, tree: "Tree", state: list[str], constraints: list[str], remaining_cards):
         """Run one game rollout from state to a terminal state using random
         playout policy and return the numerical utility of the result.
 
@@ -159,8 +160,7 @@ class Player:
             rand_letter = remaining_cards.pop(random.randint(len(remaining_cards) - 1))
 
         
-        score = utility(constraints, new_state)
-        
+        score = self.__utility(constraints, new_state)
         cur_node = tree.get(state)
         cur_node.score += score
         cur_node.N += 1
@@ -169,16 +169,16 @@ class Player:
         
         return tree
 
-    def MCTS(cards: list[str], constraints: list[str], state: list[str], territory: list[int], rollouts: int = 50000):
+    def __MCTS(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int], rollouts: int = 50000):
         # MCTS main loop: Execute MCTS steps rollouts number of times
         # Then return successor with highest number of rollouts
         tree = Tree(Node(state, None, [], 24, 'Z', 0, 1))
-        tree = expand(tree, cards, state)
+        tree = self.__expand(tree, cards, state)
         available_letters = [] # append all the letters that have not been played yet
         
         for i in range(rollouts):
-            move = select(tree, state)
-            tree = simulate(tree, move, constraints, available_letters)
+            move = self.__select(tree, state)
+            tree = self.__simulate(tree, move, constraints, available_letters)
 
         nxt = None
         plays = 0
@@ -211,5 +211,5 @@ class Player:
         # because np.where returns a tuple containing the array, not the array itself
         # hour = self.rng.choice(available_hours[0])
         # hour = hour % 12 if hour % 12 != 0 else 12
-        move = MCTS(cards, constraints, state, territory)
+        move = self.__MCTS(cards, constraints, state, territory)
         return move.hour, move.letter
