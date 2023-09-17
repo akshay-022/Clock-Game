@@ -29,12 +29,54 @@ class Player:
         Returns:
             list[int]: Return the list of constraint cards that you wish to keep. (can look at the default player logic to understand.)
         """
+        
         final_constraints = []
-        #print(constraints)
+        stripped_constraints = []
+        print("CONSTRAINTS")
+        print(constraints)
+
+        print("CARDS")
+        print(cards)
 
         for i in range(len(constraints)):
-            if self.rng.random()<=0.5:
-                final_constraints.append(constraints[i])
+            # splits current constraint into array of letters and removes <'s 
+            curr = constraints[i].split('<')
+            while '<' in curr:
+                curr.remove('<')
+            numLetters = len(curr)
+            
+            # see how many letters in a constraint we have 
+            matches = 0
+            for letter in curr:
+                if letter in cards:
+                    matches += 1
+
+            match numLetters:
+                    case 2:
+                        if(matches == 1) or (matches == 2):
+                            final_constraints.append(constraints[i])
+                    case 3:
+                        if(matches == 2):
+                            final_constraints.append(constraints[i])
+                    case 4:
+                        if(matches == 3):
+                            final_constraints.append(constraints[i])
+                        elif((curr[0] in cards and curr[2] in cards) or (curr[1] in cards and curr[3] in cards)):
+                            final_constraints.append(constraints[i])
+                    case 5:
+                        if(matches == 4):
+                            final_constraints.append(constraints[i])
+                        elif((curr[0] in cards and curr[2] in cards and curr[4] in cards)):
+                            final_constraints.append(constraints[i]) 
+
+            #if(len(final_constraints) == 0){
+            #}
+  
+            #if self.rng.random()<=0.5:
+            #   final_constraints.append(constraints[i])
+
+        print("FINAL")
+        print(final_constraints)
         return final_constraints
 
 
