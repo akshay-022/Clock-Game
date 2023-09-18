@@ -62,8 +62,12 @@ class Player:
         for constraint in constraints:
             lst = constraint.split("<")
             letters_in_constraint = set(lst)
-            if all(letter in cards for letter in letters_in_constraint):
+            num_letters_in_cards = sum(
+                1 for letter in letters_in_constraint if letter in cards)
+            pct = (num_letters_in_cards / len(letters_in_constraint))
+            if pct >= 0.5:
                 final_constraints.append(constraint)
+
         return final_constraints
 
     def __risky_versus_safe():
