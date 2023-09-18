@@ -13,7 +13,7 @@ from players.default_player import Player as p4
 from players.default_player import Player as p5
 from players.default_player import Player as p6
 from players.default_player import Player as p7
-from players.default_player import Player as p8
+from players.team8_player import Player as p8
 from players.default_player import Player as p9
 from players.default_player import Player as p10
 from players.default_player import Player as p11
