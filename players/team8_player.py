@@ -1,23 +1,29 @@
+from dataclasses import dataclass
 from tokenize import String
 import numpy as np
+import numpy.typing as npt
 import random
+import string
 from typing import Tuple, List
 
+@dataclass
 class Node:
-    state: list(str)
+    state: npt.ArrayLike
     parent: "Node"
-    children: list("Node")
+    children: list["Node"]
     hour: int
     letter: str
     score: int = 0
     N: int = 0
+
 class Tree:
     def __init__(self, root: "Node"):
+        self.root = root
         self.nodes = {root.state.tobytes(): root}
         self.size = 1
-    def add(self, node = "Node"):
+    def add(self, node: "Node"):
         self.nodes[node.state.tobytes()] = node
-        parent = self.get(node.parent)
+        parent = node.parent
         parent.children.append(node)
         self.size += 1
     def get(self, state: list[str]):
@@ -31,14 +37,7 @@ class Player:
         """Initialise the player with given skill.
 
         Args:
-            skill (int): skill of your player
             rng (np.random.Generator): numpy random number generator, use this for same player behvior across run
-            logger (logging.Logger): logger use this like logger.info("message")
-            golf_map (sympy.Polygon): Golf Map polygon
-            start (sympy.geometry.Point2D): Start location
-            target (sympy.geometry.Point2D): Target location
-            map_path (str): File path to map
-            precomp_dir (str): Directory path to store/load precomputation
         """
         self.rng = rng
 
@@ -105,11 +104,11 @@ class Player:
         max_UCT = 0.0
         move = state
 
-        for child_state in tree.root.children:
-            node_UCT = (child_state.score/child_state.N + alpha*np.sqrt(tree.root.N/child_state.N))
+        for child_node in tree.root.children:
+            node_UCT = (child_node.score/child_node.N + alpha*np.sqrt(tree.root.N/child_node.N))
             if node_UCT > max_UCT:
                 max_UCT = node_UCT
-                move = child_state
+                move = child_node
             
         return move
     
@@ -129,7 +128,7 @@ class Player:
             # add our letters in every hour available
             for i in range (0,12):
                 new_state = np.copy(state)
-                if state[i] == 'Z':
+                if new_state[i] == 'Z':
                     new_state[i] = letter
                 elif new_state[i+12] == 'Z':
                     # if hour already occupied, try index + 12
@@ -137,17 +136,17 @@ class Player:
                 else:
                     # if both slots of hour already occupied, continue
                     continue
-            hour = 12 if i == 0 else i
-            tree.add(Node(new_state, tree.root, [], hour, letter, 0, 1))
+                hour = 12 if i == 0 else i
+                tree.add(Node(np.array(new_state), tree.root, [], hour, letter, 0, 1))
         return tree
 
     
-    def __simulate(self, tree: "Tree", state: list[str], constraints: list[str], remaining_cards):
+    def __simulate(self, tree: "Tree", state: npt.ArrayLike, constraints: list[str], remaining_cards: list[str]):
         """Run one game rollout from state to a terminal state using random
         playout policy and return the numerical utility of the result.
 
         Args:
-            tree ("Tree): the search tree
+            tree ("Tree"): the search tree
             state (list[str]): the clock game state
             constraints (list[str]): constraints our player wants to satisfy
             remaining_cards (list[str]): cards from all players not yet played
@@ -157,10 +156,12 @@ class Player:
         """
         new_state = np.copy(state)
         while len(remaining_cards):
-            rand_letter = remaining_cards.pop(random.randint(len(remaining_cards) - 1))
-
+            rand_letter = remaining_cards.pop(random.randint(0, len(remaining_cards) - 1))
+            available_hours = np.where(new_state == 'Z')
+            hour = random.choice(available_hours[0])
+            new_state[hour] = rand_letter
         
-        score = self.__utility(constraints, new_state)
+        score = self.__utility(constraints, new_state.tolist())
         cur_node = tree.get(state)
         cur_node.score += score
         cur_node.N += 1
@@ -169,16 +170,21 @@ class Player:
         
         return tree
 
-    def __MCTS(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int], rollouts: int = 50000):
+    def __MCTS(self, cards: list[str], constraints: list[str], state: list[str], rollouts: int = 10000):
         # MCTS main loop: Execute MCTS steps rollouts number of times
         # Then return successor with highest number of rollouts
-        tree = Tree(Node(state, None, [], 24, 'Z', 0, 1))
+        tree = Tree(Node(np.array(state), None, [], 24, 'Z', 0, 1))
         tree = self.__expand(tree, cards, state)
-        available_letters = [] # append all the letters that have not been played yet
-        
+        shuffled_letters = list(self.rng.choice(list(string.ascii_uppercase)[:24], 24, replace = False))
+        for letter in state:
+            if letter != 'Z':
+                shuffled_letters.remove(letter)
+
         for i in range(rollouts):
+            available_letters = shuffled_letters.copy()
             move = self.__select(tree, state)
-            tree = self.__simulate(tree, move, constraints, available_letters)
+            available_letters.remove(move.letter)
+            tree = self.__simulate(tree, move.state, constraints, available_letters)
 
         nxt = None
         plays = 0
@@ -197,19 +203,12 @@ class Player:
         Args:
             score (int): Your total score including current turn
             cards (list): A list of letters you have been given at the beginning of the game
-            state (list(str)): The current letters at every hour of the 24 hour clock
-            territory (list(int)): The current occupiers of every slot in the 24 hour clock. 1,2,3 for players 1,2 and 3. 4 if position unoccupied.
-            constraints(list(str)): The constraints assigned to the given player
+            state (list[str]): The current letters at every hour of the 24 hour clock
+            territory (list[int]): The current occupiers of every slot in the 24 hour clock. 1,2,3 for players 1,2 and 3. 4 if position unoccupied.
+            constraints(list[str]): The constraints assigned to the given player
 
         Returns:
-            Tuple[int, str]: Return a tuple of slot from 1-12 and letter to be played at that slot
+            Tuple(int, str): Return a tuple of slot from 1-12 and letter to be played at that slot
         """
-        
-        # letter = self.rng.choice(cards)
-        territory_array = np.array(territory)
-        available_hours = np.where(territory_array == 4)
-        # because np.where returns a tuple containing the array, not the array itself
-        # hour = self.rng.choice(available_hours[0])
-        # hour = hour % 12 if hour % 12 != 0 else 12
-        move = self.__MCTS(cards, constraints, state, territory)
+        move = self.__MCTS(cards, constraints, state)
         return move.hour, move.letter
