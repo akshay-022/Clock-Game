@@ -6,6 +6,7 @@ import random
 import string
 from typing import Tuple, List
 
+
 @dataclass
 class Node:
     state: npt.ArrayLike
@@ -16,21 +17,25 @@ class Node:
     score: int = 0
     N: int = 0
 
+
 class Tree:
     def __init__(self, root: "Node"):
         self.root = root
         self.nodes = {root.state.tobytes(): root}
         self.size = 1
+
     def add(self, node: "Node"):
         self.nodes[node.state.tobytes()] = node
         parent = node.parent
         parent.children.append(node)
         self.size += 1
+
     def get(self, state: list[str]):
         flat_state = state.tobytes()
         if flat_state not in self.nodes:
             return None
         return self.nodes[flat_state]
+
 
 class Player:
     def __init__(self, rng: np.random.Generator) -> None:
@@ -54,17 +59,19 @@ class Player:
         """
         final_constraints = []
 
-        for i in range(len(constraints)):
-            if self.rng.random() <= 0.5:
-                final_constraints.append(constraints[i])
+        for constraint in constraints:
+            lst = constraint.split("<")
+            letters_in_constraint = set(lst)
+            if all(letter in cards for letter in letters_in_constraint):
+                final_constraints.append(constraint)
         return final_constraints
 
     def __risky_versus_safe():
         pass
-    
+
     def __utility(self, constraints: list[str], final_state: list[str]):
         """Utility function that returns player's score after a single monte carlo simulation
-        
+
         Args:
             final_state (list(str)): The simulated letters at every hour of the 24 hour clock
             constraints(list(str)): The constraints assigned to the given player
@@ -72,23 +79,25 @@ class Player:
         Returns:
             int: player's core after a single monte carlo simulation
         """
-        score_value_list = [1,3,6,12]  #points for satisfying constraints on different lengths
+        score_value_list = [
+            1, 3, 6, 12]  # points for satisfying constraints on different lengths
         score = 0
         for i in range(len(constraints)):
             list_of_letters = constraints[i].split("<")
             constraint_true_indic = True
             for j in range(len(list_of_letters)-1):
-                distance_difference = (final_state.index(list_of_letters[j+1])%12) - (final_state.index(list_of_letters[j])%12)
+                distance_difference = (final_state.index(
+                    list_of_letters[j+1]) % 12) - (final_state.index(list_of_letters[j]) % 12)
                 if distance_difference < 0:
                     distance_difference = distance_difference + 12
-                if not (distance_difference <=5 and distance_difference > 0):
+                if not (distance_difference <= 5 and distance_difference > 0):
                     constraint_true_indic = False
                 if constraint_true_indic == False:
                     score = score - 1
                 else:
                     score = score + score_value_list[len(list_of_letters) - 2]
         return score
-    
+
     def __select(self, tree: "Tree", state: list[str], alpha: float = 1):
         """Starting from state, move to child node with the
         highest UCT value.
@@ -105,13 +114,14 @@ class Player:
         move = state
 
         for child_node in tree.root.children:
-            node_UCT = (child_node.score/child_node.N + alpha*np.sqrt(tree.root.N/child_node.N))
+            node_UCT = (child_node.score/child_node.N + alpha *
+                        np.sqrt(tree.root.N/child_node.N))
             if node_UCT > max_UCT:
                 max_UCT = node_UCT
                 move = child_node
-            
+
         return move
-    
+
     def __expand(self, tree: "Tree", cards: list[str], state: list[str]):
         """Add all children nodes of state into the tree and return
         tree.
@@ -123,10 +133,10 @@ class Player:
         Returns:
             "Tree": the tree after insertion
         """
-        
+
         for letter in cards:
             # add our letters in every hour available
-            for i in range (0,12):
+            for i in range(0, 12):
                 new_state = np.copy(state)
                 if new_state[i] == 'Z':
                     new_state[i] = letter
@@ -137,10 +147,10 @@ class Player:
                     # if both slots of hour already occupied, continue
                     continue
                 hour = 12 if i == 0 else i
-                tree.add(Node(np.array(new_state), tree.root, [], hour, letter, 0, 1))
+                tree.add(Node(np.array(new_state),
+                         tree.root, [], hour, letter, 0, 1))
         return tree
 
-    
     def __simulate(self, tree: "Tree", state: npt.ArrayLike, constraints: list[str], remaining_cards: list[str]):
         """Run one game rollout from state to a terminal state using random
         playout policy and return the numerical utility of the result.
@@ -156,18 +166,19 @@ class Player:
         """
         new_state = np.copy(state)
         while len(remaining_cards):
-            rand_letter = remaining_cards.pop(random.randint(0, len(remaining_cards) - 1))
+            rand_letter = remaining_cards.pop(
+                random.randint(0, len(remaining_cards) - 1))
             available_hours = np.where(new_state == 'Z')
             hour = random.choice(available_hours[0])
             new_state[hour] = rand_letter
-        
+
         score = self.__utility(constraints, new_state.tolist())
         cur_node = tree.get(state)
         cur_node.score += score
         cur_node.N += 1
         tree.root.score += score
         tree.root.N += 1
-        
+
         return tree
 
     def __MCTS(self, cards: list[str], constraints: list[str], state: list[str], rollouts: int = 10000):
@@ -175,7 +186,8 @@ class Player:
         # Then return successor with highest number of rollouts
         tree = Tree(Node(np.array(state), None, [], 24, 'Z', 0, 1))
         tree = self.__expand(tree, cards, state)
-        shuffled_letters = list(self.rng.choice(list(string.ascii_uppercase)[:24], 24, replace = False))
+        shuffled_letters = list(self.rng.choice(
+            list(string.ascii_uppercase)[:24], 24, replace=False))
         for letter in state:
             if letter != 'Z':
                 shuffled_letters.remove(letter)
@@ -184,16 +196,17 @@ class Player:
             available_letters = shuffled_letters.copy()
             move = self.__select(tree, state)
             available_letters.remove(move.letter)
-            tree = self.__simulate(tree, move.state, constraints, available_letters)
+            tree = self.__simulate(
+                tree, move.state, constraints, available_letters)
 
         nxt = None
         plays = 0
-        
+
         for succ in tree.root.children:
             if succ.N > plays:
                 plays = succ.N
                 nxt = succ
-        return nxt    
+        return nxt
 
     # def play(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int]) -> Tuple[int, str]:
 
