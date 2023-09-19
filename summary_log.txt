@@ -1,6 +1,6 @@
 Final result is as follows : 
-Scores for players 1, 2 and 3 : [0, 2, 0]
-Satisfied constraints for players 1, 2 and 3 : [['B<E', 'H<M'], ['H<A<W'], ['J<N']]
-total time taken to finish the game : 0.013253927230834961s
-Time taken by player 1, 2 and 3 to choose : [8.893013000488281e-05, 0.00014209747314453125, 4.9114227294921875e-05]
-Total time taken by player 1, 2 and 3 to decide moves : [0.0015184879302978516, 0.002136707305908203, 0.001497030258178711]
+Scores for players 1, 2 and 3 : [-4, -2, 6]
+Satisfied constraints for players 1, 2 and 3 : [[], [], ['D<T', 'U<D<X<P']]
+total time taken to finish the game : 0.011287927627563477s
+Time taken by player 1, 2 and 3 to choose : [4.792213439941406e-05, 3.1948089599609375e-05, 3.0994415283203125e-05]
+Total time taken by player 1, 2 and 3 to decide moves : [0.0023431777954101562, 0.0022051334381103516, 0.002360105514526367]

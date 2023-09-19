@@ -88,7 +88,92 @@ class Player:
             if letter in state[i]:
                 return (True, i)
         return (False, -1)
+    
+    def bestMove (self, available_hours, cards):
+        bestScore = float('-inf')
+        moves = [[]]
+        bestMove = []
+        for i in available_hours:
+            for x in cards:
+                hour = i
+                letter = x
+                score = self.minimax(clock, hour, letter, 0, true)
+                if (score>bestScore):
+                    bestScore = score
+                    bestMove = [i,x]
+        
+        return bestMove
 
+
+    def getScore(self, state, territory):
+        pass
+        
+# state = [] array of one to 24, z is empty 
+# territory = [] array of one to 24, # of player who's there 
+# a
+
+        
+    def getAvailableMoves(self, cards, state):
+        availableMoves = {}
+        state_array = np.array(state)
+        available_hours = np.where(state_array == 'Z')
+        for i in available_hours:
+            for x in cards:
+                availableMoves.append(i,x)
+        return availableMoves
+    
+
+    # function to get unplayed cards on the board 
+    def getOtherCards(self, cards, state):
+        letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X']
+        for i in cards:
+            if i in letters:
+                letters.remove(i)
+        for i in state: 
+            if i in letters: 
+                letters.remove(i)
+        return letters 
+
+
+    def minimax(state, hour, letter, cards, depth, isMaximizing):
+        # check what the score is/ who the "winner" is 
+
+        state_array = np.array(state)
+        available_hours = np.where(state_array == 'Z')
+        
+        #maximizing
+        if(isMaximizing): # anita 
+            bestScore = float('-inf')
+            for i in available_hours:
+                for x in cards:
+                    if i == hour and x == letter:
+                        pass
+                    hour = i
+                    letter = x
+                    #change available hours before passing 
+                    score = self.minimax(state, hour, letter, cards, depth+1, False)
+                  
+                    if (score>bestScore):
+                        bestScore = score
+                        bestMove = [i,x]
+
+        #minimizing 
+        else:
+            bestScore = float('inf')
+            other_cards = self.getOtherCards(self, cards, state)
+            for i in available_hours:
+                for x in other_cards:
+                    hour = i
+                    letter = x
+                    #change available hours before passing 
+                    score = self.minimax(state, hour, letter, cards, depth+1, True)
+                  
+                    if (score<bestScore):
+                        bestScore = score
+                        bestMove = [i,x]
+        
+        return bestMove
+            
 
     #def play(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int]) -> Tuple[int, str]:
     def play(self, cards, constraints, state, territory):
@@ -111,173 +196,4 @@ class Player:
         hour = self.rng.choice(available_hours[0])          #because np.where returns a tuple containing the array, not the array itself
         hour = hour%12 if hour%12!=0 else 12
 
-        #add code to sort arrays by len??
-        #add code to highlight priority (short vs long term gain)
-        #add code to remove constraints as they becomes unachievable
-
-        for constraint in constraints:
-            print("constraint: ", constraint)
-            numLetters = len(constraint)
-
-            match numLetters:
-                    case 2:
-                        if(self.is_played(constraint[0],state)[0] and constraint[1] in cards):
-                            hour_played = self.is_played(constraint[0], state)[1]
-                            shift = 1
-                            while((hour_played + shift) not in available_hours):
-                                shift+=1
-                            hour = hour_played + shift
-                            hour = hour%12 if hour%12!=0 else 12
-                            letter = constraint[1]
-
-                        elif(self.is_played(constraint[1],state)[0] and constraint[0] in cards):
-                            hour_played = self.is_played(constraint[1], state)[1]
-                            shift = -1
-                            while((hour_played + shift) not in available_hours):
-                                shift-=1
-                            hour = hour_played + shift
-                            hour = hour%12 if hour%12!=0 else 12
-                            letter = constraint[0]
-
-                        elif(constraint[0] in cards and constraint[1] in cards):
-                            hour = 6 
-                            shift = 0
-                            while((hour_played + shift) not in available_hours):
-                                shift-=1
-                            hour = hour_played + shift
-                            hour = hour%12 if hour%12!=0 else 12
-                            letter = constraint[0]
-
-                    case 3:
-                    #if(matches == 2):
-                    #        final_constraints.append(constraints[i])
-
-                        #If we have the middle letter (not played)
-                        if(constraint[1] in cards):
-                            
-                            #If both the first and last letter have been played, play the middle letter in between them
-                            if(self.is_played(constraint[0],state)[0] and self.is_played(constraint[2],state)[0]):
-                                hour_played = self.is_played(constraint[0], state)[1]
-                                hour_played2 = self.is_played(constraint[2], state)[1]
-
-                                if(hour_played < hour_played2+1):
-                                    shift = 1
-                                    while((hour_played + shift) not in available_hours and hour_played+shift < hour_played2):
-                                        shift+=1
-                                    hour = hour_played + shift
-                                    hour = hour%12 if hour%12!=0 else 12
-                                    letter = constraint[1]
-                                        
-                            #If only the first letter has been played, play the middle letter after it 
-                            elif(self.is_played(constraint[0],state)[0]):
-                                hour_played = self.is_played(constraint[0], state)[1]
-                                shift = 1
-                                while((hour_played + shift) not in available_hours):
-                                    shift+=1
-                                hour = hour_played + shift
-                                hour = hour%12 if hour%12!=0 else 12
-                                letter = constraint[1]
-
-                            #If only the last letter has been played, play the middle letter before it 
-                            elif(self.is_played(constraint[2],state)[0]):
-                                hour_played = self.is_played(constraint[2], state)[1]
-                                shift = -1
-                                while((hour_played + shift) not in available_hours):
-                                    shift-=1
-                                hour = hour_played + shift
-                                hour = hour%12 if hour%12!=0 else 12
-                                letter = constraint[1]
-
-                            #Neither first nor last letter has been played
-                            else:
-                                hour = 6 
-                                shift = 0
-                                while((hour_played + shift) not in available_hours):
-                                    shift-=1
-                                hour = hour_played + shift
-                                hour = hour%12 if hour%12!=0 else 12
-                                letter = constraint[1]
-
-                        #If middle letter has been played
-                        if(self.is_played(constraint[1],state)[0]):
-                            
-                            if(self.is_played(constraint[0],state)[0]):
-                                hour_played = self.is_played(constraint[0], state)[1]
-                    # case 4:
-                    # #if(matches == 3)
-                    #     played = []
-                    #     not_played = []
-                    #     num_played = 0
-                    #     # see how many are played of this constraint 
-                    #     for i in len(constraint):
-                    #         if(self.is_played(constraint[i], state)[0]):
-                    #             num_played += 1
-                    #             played.append(i)
-                    #         else: 
-                    #             not_played.append(i)
-
-                    #     if num_played == 3: 
-                    #         # check if you have the unplayed one 
-                    #         if(constraint[not_played[0]] in cards):
-                    #             letter = constraint[not_played[0]]
-
-                    #             hour_played = self.is_played(constraint[played[0]], state)[1]
-                    #             hour_played2 = self.is_played(constraint[played[1]], state)[1]
-                    #             hour_played3 = self.is_played(constraint[played[2]], state)[1]
-                                           
-
-                    #     elif num_played == 2:
-                    #         if(constraint[not_played[0]] in cards):
-                    #             letter = constraint[not_played[0]]
-                                
-                    #             hour_played = self.is_played(constraint[played[0]], state)[1]
-                    #             hour_played2 = self.is_played(constraint[played[1]], state)[1]
-                    #         elif(constraint[not_played[1]] in cards):
-                    #             letter = constraint[not_played[0]]
-                                
-                    #             hour_played = self.is_played(constraint[played[0]], state)[1]
-                    #             hour_played2 = self.is_played(constraint[played[1]], state)[1]
-
-                    #     elif num_played == 1:
-                    #         pass
-
-                    #     else: # play any of the cards that you have in this constraint 
-                    #         if(constraint[0] in cards):
-                    #             letter = constraint[0]
-                    #             #hour = 
-
-
-                    #     if(self.is_played(constraint[0], state)[0] and self.is_played(constraint[1], state)[0] and self.is_played(constraint[3], state)[0]):
-                    #         hour_played = self.is_played(constraint[1], state)[1]
-                    #         hour_played2 = self.is_played(constraint[2], state)[1]
-                    #         hour_played3 = self.is_played(constraint[3], state)[1]
-
-
-                    # case 5: 
-                    # #if(matches == 4)
-
-                    #     #If we have the middle letter (not played)
-                    #     if(constraint[2] in cards):
-                    #         #If both the first and last letter have been played, play the middle letter in between them
-                    #         if(self.is_played(constraint[1],state)[0] and self.is_played(constraint[3],state)[0]):
-                    #             hour_played = self.is_played(constraint[1], state)[1]
-                    #             hour_played2 = self.is_played(constraint[3], state)[1]
-
-                    #             if(hour_played < hour_played2+1): #check if const[1] < const[3] if not then discard constraint and keep playing other ones.
-                    #                 shift = 1
-                    #                 while((hour_played + shift) not in available_hours and hour_played+shift < hour_played2):
-                    #                     shift+=1
-                    #                 hour = hour_played + shift
-                    #                 hour = hour%12 if hour%12!=0 else 12
-                    #                 letter = constraint[2]
-                                
-
-                    #         #if
-
-                                                  
-
-                       
-
-
         return hour, letter
-    

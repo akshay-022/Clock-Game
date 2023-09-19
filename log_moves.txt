@@ -1,31 +1,31 @@
 The game.....has started.
-Move 1 : player 1 ,time 0.0003399848937988281s, E at 11
-Move 2 : player 2 ,time 0.00023102760314941406s, I at 1
-Move 3 : player 3 ,time 0.00014781951904296875s, J at 3
-Move 1 : player 1 ,time 0.00014638900756835938s, A at 9
-Move 2 : player 2 ,time 0.0001838207244873047s, B at 7
-Move 3 : player 3 ,time 0.00013971328735351562s, T at 1
-Move 1 : player 1 ,time 0.00014090538024902344s, C at 2
-Move 2 : player 2 ,time 0.00019311904907226562s, U at 12
-Move 3 : player 3 ,time 0.0001437664031982422s, G at 8
-Move 1 : player 1 ,time 0.0001442432403564453s, S at 2
-Move 2 : player 2 ,time 0.0005147457122802734s, W at 10
-Move 3 : player 3 ,time 0.0003018379211425781s, D at 10
-Move 1 : player 1 ,time 0.00015020370483398438s, K at 4
-Move 2 : player 2 ,time 0.00018477439880371094s, H at 5
-Move 3 : player 3 ,time 0.00016689300537109375s, N at 7
-Move 1 : player 1 ,time 0.0001621246337890625s, O at 9
-Move 2 : player 2 ,time 0.00038814544677734375s, L at 3
-Move 3 : player 3 ,time 0.000247955322265625s, Q at 8
-Move 1 : player 1 ,time 0.00031280517578125s, V at 4
-Move 2 : player 2 ,time 0.0002570152282714844s, R at 5
-Move 3 : player 3 ,time 0.00019621849060058594s, F at 6
-Move 1 : player 1 ,time 0.00012183189392089844s, M at 6
-Move 2 : player 2 ,time 0.00018405914306640625s, P at 11
-Move 3 : player 3 ,time 0.00015282630920410156s, X at 12
-Player 1 has score 0 with satistied constraints ['B<E', 'H<M'] unsatisfied constraints ['U<X<L<T', 'W<O<A<M<Q'] and initial constraints ['B<E', 'U<O<C', 'U<X<L<T', 'W<O<A<M<Q', 'H<M']
-Player 2 has score 2 with satistied constraints ['H<A<W'] unsatisfied constraints ['W<F'] and initial constraints ['W<F', 'H<A<W', 'R<S<K<I', 'U<E<N<H<G', 'E<Q']
-Player 3 has score 0 with satistied constraints ['J<N'] unsatisfied constraints ['U<D<X<P'] and initial constraints ['D<T', 'R<A<I', 'U<D<X<P', 'C<Q<R<I<D', 'J<N']
-Congratulations Player 2 you are the winner!!!
-Time taken by player 1, 2 and 3 to choose : [8.893013000488281e-05, 0.00014209747314453125, 4.9114227294921875e-05]
-Total time taken by player 1, 2 and 3 to decide moves : [0.0015184879302978516, 0.002136707305908203, 0.001497030258178711]
+Move 1 : player 1 ,time 0.0005888938903808594s, O at 10
+Move 2 : player 2 ,time 0.000293731689453125s, H at 1
+Move 3 : player 3 ,time 0.00047087669372558594s, J at 12
+Move 1 : player 1 ,time 0.0002999305725097656s, V at 6
+Move 2 : player 2 ,time 0.00024008750915527344s, U at 9
+Move 3 : player 3 ,time 0.00022029876708984375s, Q at 10
+Move 1 : player 1 ,time 0.00022912025451660156s, M at 9
+Move 2 : player 2 ,time 0.0003991127014160156s, W at 1
+Move 3 : player 3 ,time 0.0004341602325439453s, T at 12
+Move 1 : player 1 ,time 0.0004189014434814453s, K at 5
+Move 2 : player 2 ,time 0.0003409385681152344s, P at 8
+Move 3 : player 3 ,time 0.0002257823944091797s, D at 11
+Move 1 : player 1 ,time 0.00020503997802734375s, C at 7
+Move 2 : player 2 ,time 0.00019884109497070312s, B at 3
+Move 3 : player 3 ,time 0.00019311904907226562s, F at 5
+Move 1 : player 1 ,time 0.00019502639770507812s, A at 7
+Move 2 : player 2 ,time 0.00019621849060058594s, I at 4
+Move 3 : player 3 ,time 0.00025010108947753906s, N at 6
+Move 1 : player 1 ,time 0.00020313262939453125s, S at 8
+Move 2 : player 2 ,time 0.00018095970153808594s, L at 2
+Move 3 : player 3 ,time 0.0001709461212158203s, G at 2
+Move 1 : player 1 ,time 0.00020313262939453125s, E at 11
+Move 2 : player 2 ,time 0.0003552436828613281s, R at 3
+Move 3 : player 3 ,time 0.0003948211669921875s, X at 4
+Player 1 has score -4 with satistied constraints [] unsatisfied constraints ['B<E', 'U<X<L<T', 'W<O<A<M<Q', 'H<M'] and initial constraints ['B<E', 'U<O<C', 'U<X<L<T', 'W<O<A<M<Q', 'H<M']
+Player 2 has score -2 with satistied constraints [] unsatisfied constraints ['R<S<K<I', 'E<Q'] and initial constraints ['W<F', 'H<A<W', 'R<S<K<I', 'U<E<N<H<G', 'E<Q']
+Player 3 has score 6 with satistied constraints ['D<T', 'U<D<X<P'] unsatisfied constraints ['J<N'] and initial constraints ['D<T', 'R<A<I', 'U<D<X<P', 'C<Q<R<I<D', 'J<N']
+Congratulations Player 3 you are the winner!!!
+Time taken by player 1, 2 and 3 to choose : [4.792213439941406e-05, 3.1948089599609375e-05, 3.0994415283203125e-05]
+Total time taken by player 1, 2 and 3 to decide moves : [0.0023431777954101562, 0.0022051334381103516, 0.002360105514526367]
