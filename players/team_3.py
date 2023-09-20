@@ -1,6 +1,7 @@
 from tokenize import String
 import numpy as np
 from typing import Tuple, List
+import time 
 
 class Player:
     def __init__(self, rng: np.random.Generator) -> None:
@@ -32,11 +33,11 @@ class Player:
         
         final_constraints = []
         stripped_constraints = []
-        print("CONSTRAINTS")
-        print(constraints)
+        # print("CONSTRAINTS")
+        # print(constraints)
 
-        print("CARDS")
-        print(cards)
+        # print("CARDS")
+        # print(cards)
 
         for i in range(len(constraints)):
             # splits current constraint into array of letters and removes <'s 
@@ -77,11 +78,9 @@ class Player:
             #if self.rng.random()<=0.5:
             #   final_constraints.append(constraints[i])
 
-        print("FINAL")
-        print(final_constraints)
+        # print("FINAL")
+        # print(final_constraints)
         return final_constraints
-    
-    
 
     def is_played(self, letter, state):
         for i in range(len(state)):
@@ -89,28 +88,20 @@ class Player:
                 return (True, i)
         return (False, -1)
     
-    def bestMove (self, available_hours, cards):
-        bestScore = float('-inf')
-        moves = [[]]
-        bestMove = []
-        for i in available_hours:
-            for x in cards:
-                hour = i
-                letter = x
-                score = self.minimax(clock, hour, letter, 0, true)
-                if (score>bestScore):
-                    bestScore = score
-                    bestMove = [i,x]
+    # def bestMove (self, available_hours, cards):
+    #     bestScore = float('-inf')
+    #     moves = [[]]
+    #     bestMove = []
+    #     for i in available_hours:
+    #         for x in cards:
+    #             hour = i
+    #             letter = x
+    #             score = self.minimax(clock, hour, letter, 0, true)
+    #             if (score>bestScore):
+    #                 bestScore = score
+    #                 bestMove = [i,x]
         
-        return bestMove
-
-
-    def getScore(self, state, territory):
-        pass
-        
-# state = [] array of one to 24, z is empty 
-# territory = [] array of one to 24, # of player who's there 
-# a
+    #     return bestMove
 
         
     def getAvailableMoves(self, cards, state):
@@ -135,45 +126,60 @@ class Player:
         return letters 
 
 
-    def minimax(state, hour, letter, cards, depth, isMaximizing):
+    def minimax(self, state, cards, constraints, depth, isMaximizing):
+        bestMove = (0, 0)
+        score = self.getScore(state, cards, constraints)
+        curr_time = time.process_time() - self.time
         # check what the score is/ who the "winner" is 
+        if depth == 8 or curr_time >= 1:
+            score = self.getScore(state, cards, constraints)
+            return bestMove, score
 
         state_array = np.array(state)
         available_hours = np.where(state_array == 'Z')
+        # print("STATE:", state)
+        # print("STATE ARR:", state_array)
+        avail_arr = available_hours[0].flatten()
+        # print("BEFORE", available_hours)
+        # print("FLATTEN", avail_arr)
+        # print("FLATTEN[0]: ", avail_arr[0])
         
         #maximizing
-        if(isMaximizing): # anita 
+        if(isMaximizing):  
             bestScore = float('-inf')
-            for i in available_hours:
+            for i in avail_arr:
                 for x in cards:
-                    if i == hour and x == letter:
-                        pass
-                    hour = i
-                    letter = x
-                    #change available hours before passing 
-                    score = self.minimax(state, hour, letter, cards, depth+1, False)
-                  
-                    if (score>bestScore):
-                        bestScore = score
-                        bestMove = [i,x]
+                    if x not in state:
+                        state[i] = x
+                        #print("STATE:", state)
+                        #print("POS: ", i, "LETTER: ", x)
+                        #we got rid of the plus sign here.....
+                        score = self.minimax(state, cards, constraints, depth+1, False)[1]
+                        state[i] = 'Z'
+                        if (score>bestScore):
+                            bestScore = score
+                            bestMove = [i, x]
+                            return bestMove, score
 
         #minimizing 
+        #figure out how to minimize twice to represent the two players
+        #add alpha beta
         else:
             bestScore = float('inf')
-            other_cards = self.getOtherCards(self, cards, state)
-            for i in available_hours:
+            other_cards = self.getOtherCards(cards, state)
+            for i in avail_arr:
                 for x in other_cards:
-                    hour = i
-                    letter = x
-                    #change available hours before passing 
-                    score = self.minimax(state, hour, letter, cards, depth+1, True)
-                  
-                    if (score<bestScore):
-                        bestScore = score
-                        bestMove = [i,x]
+                    if x not in state:
+                        state[i] = x
+                        score = self.minimax(state, cards, constraints, depth+1, True)[1]
+                        state[i] = 'Z'
+                        if (score<bestScore):
+                            bestScore = score
+                            bestMove = [i,x]
+                    
         
-        return bestMove
-            
+        return bestMove, score
+        
 
     #def play(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int]) -> Tuple[int, str]:
     def play(self, cards, constraints, state, territory):
@@ -190,10 +196,46 @@ class Player:
             Tuple[int, str]: Return a tuple of slot from 1-12 and letter to be played at that slot
         """
 
-        letter = self.rng.choice(cards)
-        territory_array = np.array(territory)
-        available_hours = np.where(territory_array == 4)
-        hour = self.rng.choice(available_hours[0])          #because np.where returns a tuple containing the array, not the array itself
+        # print("STATE: ", state)
+        # print("CARDS: ", cards)
+
+        self.time = time.process_time()
+        new_cards = cards.copy() 
+        new_state = state.copy()
+        new_constraints = constraints.copy()
+        depth = 0
+        
+        bestMove = self.minimax(new_state, new_cards, new_constraints, depth, True)[0]
+        #print("check: ", bestMove)
+        letter= bestMove[1]
+        hour = bestMove[0]
         hour = hour%12 if hour%12!=0 else 12
 
         return hour, letter
+    
+    # func to get the score of our own cards at the passed in state 
+    def getScore(self, state, cards, constraints):
+        # if a letter satsifies anything += 1/X, X being the number of letters in that constraint
+        totalScore = 0
+        score_arr = [0, 0, 1, 3, 6, 12]
+        positions = {}
+        # create dict of key letters to index values 
+        for i in range(len(state)):
+            positions[state[i]] = i
+         
+        for i in range(len(constraints) - 1):
+            constraint = constraints[i].split('<')
+            if constraint[i] in positions and constraint[i+1] in positions:
+                position1 = positions[constraint[i]]
+                position2 = positions[constraint[i+1]]
+                difference = (position2%12) - (position1%12)
+                if difference < 0:
+                    difference += 12 
+                if difference <= 5:
+                    totalScore += float(score_arr[(len(constraint))]/len(constraint))
+                else: 
+                    totalScore -= 0.5
+        
+        #print("SCORE: ", totalScore)
+        return totalScore
+
