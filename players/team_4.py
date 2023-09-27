@@ -230,7 +230,7 @@ class Player:
     def __stdev(self, state):
         count = self.visits[state]
         if count < 2:
-            return 0
+            return float('inf')
         sample_var = self.m2[state] / (count - 1)
 
         return np.sqrt(sample_var)
