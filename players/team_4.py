@@ -305,10 +305,10 @@ class Player:
 
         next_states = [(p, self.game.next_state(state, p)) for p in legal]
 
-        print(f"Simulated {games} games")
+       # print(f"Simulated {games} games")
 
-        print(f"Current state: {state}")
-        print(f"Next moves:")
+       #print(f"Current state: {state}")
+       # print(f"Next moves:")
         for p, s in next_states:
             print(f"{p}: {self.visits.get(s)}, {self.vals.get(s, 0) / self.visits.get(s, 1):.2f}")
 
@@ -319,7 +319,7 @@ class Player:
             for p, s in next_states
         )
 
-        print(f"Played {p}: {mu_v:.2f}")
+       #print(f"Played {p}: {mu_v:.2f}")
 
         h, a = p
         if not h:
