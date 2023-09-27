@@ -2,6 +2,8 @@ from tokenize import String
 import numpy as np
 from typing import Tuple, List
 import itertools as it
+import math
+import random
 
 class Player:
 
@@ -34,7 +36,17 @@ class Player:
                     keep = False
             if keep:
                 final_constraints.append(constraint)
-        return final_constraints
+
+        if len(final_constraints) < 20:
+            return final_constraints
+
+        max = math.ceil(math.sqrt(len(constraints)) / 5)
+        selected_constraints = []
+        for constraint in final_constraints:
+            if random.random() < .5:
+                selected_constraints.append(constraint)
+        print(len(selected_constraints[:max]))
+        return selected_constraints[:max]
 
 
     #def play(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int]) -> Tuple[int, str]:
@@ -115,7 +127,7 @@ class Player:
                 space = False
                 for i in range(1, 6):
                     newloc = (loc + i) % 12
-                    if clock_letters[newloc] == 'z' or clock_letters[newloc + 12] == 'z':
+                    if clock_letters[newloc] == 'Z' or clock_letters[newloc + 12] == 'Z':
                         space = True
                 if space == False:
                     return False
@@ -125,7 +137,7 @@ class Player:
                 space = False
                 for i in range(1, 6):
                     newloc = (loc - i) % 12
-                    if clock_letters[newloc] == 'z' or clock_letters[newloc + 12] == 'z':
+                    if clock_letters[newloc] == 'Z' or clock_letters[newloc + 12] == 'Z':
                         space = True
                 if space == False:
                     return False
@@ -191,6 +203,48 @@ class Player:
         chosen_hour = max(viable_cells, key=lambda cell: metric[cell])[0]
         return chosen_hour
 
+    def find_reservations(self, clock_letters, active_constraints):
+        is_less_than_three = False
+        is_less_than_three_count = 0
+        constraint_played = []
+        for constraint in active_constraints:
+            if len(constraint) == 3:
+                continue
+            
+            for count, letter in enumerate(constraint):
+                if letter in clock_letters:
+                    constraint_played.append((letter, count))
+                    break
+            if len(constraint_played) == 0:
+                continue
+
+            is_less_than_three = True
+            is_less_than_three_count += 1
+            if is_less_than_three_count > 1:
+                return []
+
+        if is_less_than_three and len(constraint_played)>0:
+            for letter, count in constraint_played:
+                if count == 0:
+                    hour = clock_letters.index(letter)
+                    if hour == 0 or hour == 12:
+                        return [0, 12, 11, 23, 10, 22]
+                    elif hour == 1 or hour == 13:
+                        return [1, 13, 0, 12, 11, 23]
+                    elif hour < 12:
+                        return [hour, hour+12, hour-1, hour+11, hour-2, hour+10]
+                    return [hour, hour%12, hour-1, (hour-1)%12, hour-2, (hour-2)%12]
+                elif count == 2:
+                    hour = clock_letters.index(letter)
+                    if hour == 10 or hour == 22:
+                        return [10, 22, 11, 23, 0, 12]
+                    elif hour == 11 or hour == 23:
+                        return [11, 23, 0, 12, 1, 13]
+                    elif hour < 10:
+                        return [hour, hour+12, hour+1, hour+13, hour+2, hour+14]
+                    return [hour, hour%12, hour+1, (hour+1)%12, hour+2, (hour+2)%12]
+        return []
+
 
     def make_backup_play(self, active_constraints, useful_letters, discard_letters, clock_letters):  # returns chosen_hour, chosen_letter
         available_hours = np.where(np.array(clock_letters) == 'Z')
@@ -209,9 +263,17 @@ class Player:
                     break
             return chosen_hour, chosen_letter
         if discard_letters:
+            print("DISCARD")
             chosen_letter = self.rng.choice(discard_letters)
-            # we don't want to play in spots that would block our constraints
-            # we want to choose the hour that is outside of the range of our contraints
+            reserved_hours = self.find_reservations(clock_letters, active_constraints)
+            if len(reserved_hours) > 0:
+                print("reserved_hours", reserved_hours)
+                print("available_hours", available_hours)
+                for hour in reserved_hours:
+                    if hour in available_hours[0]:
+                        print("RESERVED")
+                        chosen_hour = hour
+                        break
         else:  # If there's no discard, then we have to play a useful, starting from the shortest constraint
             chosen_letter = None
             for constraint in reversed(active_constraints):
