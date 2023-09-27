@@ -34,6 +34,7 @@ class Player:
         """
         return _constraint.upper().split('<')
 
+
     #def choose_discard(self, cards: list[str], constraints: list[str]):
     def choose_discard(self, cards, constraints):
         """Function in which we choose which cards to discard, and it also inititalises the cards dealt to the player at the game beginning
@@ -47,7 +48,7 @@ class Player:
         """
         final_constraints = []
 
-        
+        points_for_consts = {2: 1, 3: 3, 4: 6, 5: 12}
         # print("Constraints given to us:", constraints)
         # print("Cards given to us:", cards)
 
@@ -68,24 +69,19 @@ class Player:
             two_letter_probs = {0: 0.43478260869, 1: 0.687, 2: 1} #this have been calculated and hard coded in 
 
             # Points associated with each constraint size
-            points_for_consts = {2: 1, 3: 3, 4: 6, 5: 12}
+            
 
             # print("Current constraint:", _constraint)
             lst_constraint = self.constraint_parser(_constraint)
             # print("List format constraint:", lst_constraint)
 
             #score = 1
-            def num_letters(constraint:list, _cards: list): #count number of letters in constraint 
-                num_letters = 0 
-                for letter in constraint:
-                    if letter in _cards:
-                        num_letters +=1 
-                return num_letters
+            
 
             #calculate the number of letters you have in a constraint 
-            num_letters = num_letters(lst_constraint, _cards) 
+            number_letters = num_letters(lst_constraint, _cards) 
             #calculate expected probability of taking on that constraint 
-            score = probability_calculator(num_letters, len(lst_constraint))
+            score = probability_calculator(number_letters, len(lst_constraint))
             '''print("constraint size: " + str(len(lst_constraint)))
             print("num letters: " + str(num_letters))
             print("score: " + str(score))'''
@@ -110,13 +106,74 @@ class Player:
             if curr_const_score  >= expected_value_lowerbound: #if this value is too high, it just chooses nothing  
                 final_constraints.append(curr_const)
 
+
+        #next prune through final_constraints to identify conflicting constraints 
+        
+        if len(constraints) <= 15:
+            conflicting_constraints = set() #hold indexes of those to be removed
+            #if ev is less and they are constricted, remove them from list -> create a new list that does not include them 
+            constraint_map = {} #add key value pairs 
+            for c in range(len(final_constraints)):#use points for consts to determine value 
+                constraint = final_constraints[c].split("<")
+                constraint_size = len(constraint)
+                number_letters = num_letters(constraint, cards) 
+                score = probability_calculator(number_letters, constraint_size)
+                e_v = score * points_for_consts[constraint_size] - (1-score)
+                #extract all micro constraints as tuples 
+                for i in range(constraint_size):
+                    first_letter = constraint[i]
+                    for j in range (i+1,constraint_size):
+                        mini_pair = (first_letter,constraint[j])
+                        #reverse_test = (constraint[j],first_letter) 
+                        #push tuple of constraint as key and tuple of E_v index as value 
+                        if mini_pair in constraint_map: #add greater value 
+                            ev = constraint_map[mini_pair][0]
+                            if e_v > ev: #update value 
+                                constraint_map[mini_pair] = [e_v,c]
+                        #elif reverse_test not in constraint_map:
+                        else:
+                            constraint_map[mini_pair] = [e_v,c] #hold onto ev and index 
+            #now loop thru the map and get any reverse constraints
+
+            for key in constraint_map:
+                val1 = key[0]
+                val2 = key[1] 
+                reverse_tuple = (val2,val1)
+                print("main key:" + key[0] + key[1])
+                print("reverse key:" + reverse_tuple[0] + reverse_tuple[1])
+                if reverse_tuple in constraint_map: #means conflict 
+                    #remove the one of lower e_v
+                    if constraint_map[reverse_tuple] > constraint_map[key]:
+                        conflicting_constraints.add(constraint_map[key][1])
+                        constraint_map[key][0] = -1 
+                    else: 
+                        conflicting_constraints.add(constraint_map[reverse_tuple][1])
+                        constraint_map[reverse_tuple][0] = -1 
+            print("the constraints to be deleted are as follows: ")
+            for a in conflicting_constraints:
+                print(a)
+            
+            #now remove the indexes in conflciting constraints 
+            final_final_constraints = []
+            for i in range(len(final_constraints)):
+                if i not in conflicting_constraints:
+                    final_final_constraints.append(final_constraints[i])
+            final_constraints = final_final_constraints
+        
+
+                    
+
+
         # Look into conflicting constraints
-        self.curr_constraint_tally = {const: False for const in final_constraints}
+        # 0  - constraint is unsatisfied
+        # 1  - constraint is satisfied
+        # -1 - constraint cannot be satisfied
+        self.curr_constraint_tally = {const: 0 for const in final_constraints}
 
         # print("Final selected constraints:", final_constraints)
         return final_constraints
 
-    def is_2_const_satisfied(self, _two_const, _state):
+    def is_two_const_satisfied(self, _two_const, _state):
         """A Function that checks whether a two letter constraint is satisfied.
 
         Args:
@@ -124,20 +181,33 @@ class Player:
             _state (list(list)): The state of the clock.
 
         Returns:
-            bool: A boolean value that descibes whether the two letter constraint is satisfied.
+            int: Returns 1 if satisfied, returns 0 if one or both of the cards haven't been played yet, and returns -1 if the constraint is not satisfied.
         """
 
         # print("\t\tCurrent 2 letter constraint to evaluate is `{}<{}'".format(_two_const[0], _two_const[1]))
 
         # Obtain the index of left and right elements of the constraint
-        l_idx = _state.index(_two_const[0]) 
-        r_idx = _state.index(_two_const[1])
+        try:
+            l_idx = _state.index(_two_const[0])
+        except ValueError:
+            return 0
+        
+        try:
+            r_idx = _state.index(_two_const[1])
+        except ValueError:
+            return 0
 
-        # print("\t\tleft and right indices", l_idx, r_idx)
+        # Convert the l_idx and r_idx into hr
+        l_idx = l_idx % 12 if l_idx != 0 else 12
+        r_idx = r_idx % 12 if r_idx != 0 else 12
 
-        if ((l_idx // 2) + 7) % 12 > ((r_idx // 2) + 1) % 12:
-            return True
-        return False
+        # Handle the edge case where a is at 11 hr hand, b is at 8, then simple logic of position(b) - position(a) < 6 won't hold.
+        if l_idx > r_idx:
+            l_idx = l_idx - 12
+
+        if r_idx - l_idx < 6 and r_idx != l_idx:
+            return 1
+        return -1
 
 
     def is_constraint_satisfied(self, _card, _card_placement, _constraints, state, territory):
@@ -155,13 +225,9 @@ class Player:
         """
 
 
-        # print("Current move is to play card {} to position {}".format(_card, _card_placement))
-        # print("_constraints", _constraints)
-
         # Obtain all the constraints that are affected by current card
         _rel_constraints = [_const for _const in _constraints if _card in _const]
         
-        # print("_rel_constraints", _rel_constraints)
         
         # Return if no constraint is affected by this card
         if len(_rel_constraints) == 0:
@@ -171,7 +237,6 @@ class Player:
 
         for idx, _const in enumerate(_rel_constraints):
 
-            # print("\tLooking into constraint ", _const)
             lst_const = self.constraint_parser(_const)
 
             # Check if the contraint so far has been satisfied
@@ -182,7 +247,7 @@ class Player:
                     temp_state[_card_placement] = _card
                     
                     # if constraint is not satisfied, then skip to the next constraint
-                    if self.is_2_const_satisfied((_card, lst_const[i+1]), temp_state) is False:
+                    if self.is_two_const_satisfied((_card, lst_const[i+1]), temp_state) is False:
                         _const_status[idx] = False
                         break
                 
@@ -197,7 +262,7 @@ class Player:
                     temp_state[_card_placement] = _card
                     
                     # if constraint is not satisfied, then skip to the next constraint
-                    if self.is_2_const_satisfied((lst_const[i], _card), temp_state) is False:
+                    if self.is_two_const_satisfied((lst_const[i], _card), temp_state) is False:
                         _const_status[idx] = False
                         break
 
@@ -208,19 +273,103 @@ class Player:
                 
                 elif lst_const[i] in state and lst_const[i+1] in state:
                     # if constraint is not satisfied, then skip to the next constraint
-                    if self.is_2_const_satisfied((lst_const[i], lst_const[i+1]), state) is False:
+                    if self.is_two_const_satisfied((lst_const[i], lst_const[i+1]), state) is False:
                         _const_status[idx] = False
                         break
-
-        # print("_const_status at the end", _const_status)
 
         if np.any(_const_status):
             return 1
         else:
             return -1
 
+    def update_tally(self, state, _tally):
+        """
+        A function that updates the _tally variable by assigning it scores.
+        Note: Since this function is called at the start of the play function as well as in the scoring function at each step, the _tally variable is implicitly passed as an argument.
+        """
 
-    #def play(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int]) -> Tuple[int, str]:
+        for _const in _tally.keys():
+            print("Curr Const:", _const)
+            parsed_const = self.constraint_parser(_const)
+
+            satisfied_count = 0
+            for idx in range(len(parsed_const) - 1):
+                print("\tCurr two letter in curr const:", parsed_const[idx], '<', parsed_const[idx+1])
+                response = self.is_two_const_satisfied((parsed_const[idx], parsed_const[idx+1]), state) 
+                if response == -1:
+                    satisfied_count = None # This constraint cannot be satisfied.
+                    break
+                elif response == 1:
+                    satisfied_count += 1
+            if satisfied_count == None:
+                _tally[_const] = -1
+            else:
+                _tally[_const] = satisfied_count / (len(parsed_const) - 1)
+
+        # If we want to add weights according to the size of the constraint, we can add it at this step. Simple make a dict _weights = {2: 0.2, 3: 0.4, 4: 0.6, 5: 0.8} or something, and multiply it with the tally scores. Not doing it right now due to testing demands from subsequent steps.
+
+
+    def scoring_func(self, _card, _card_placement, state):
+        """Function which returns a score in [0,1] (or -1 if it ruins a constraint and doesn't satisfy any other constraint) for a given card move <_card, _card_placement>.
+
+        Args:
+            _card (str): A string depicting which card is being considered to play currently.
+            _card_placement (int): A number between 0-23 that describes the position of the card.
+            state (list(list)): The current letters at every hour of the 24 hour clock
+            territory (list(int)): The current occupiers of every slot in the 24 hour clock. 1,2,3 for players 1,2 and 3. 4 if position unoccupied.
+            _constraints(str): The constraints selected before the start of the game
+
+        Returns:
+            int: Return a score that describes the quality of the card move <_card, _card_placement>. (0,1] - if constraint is helped by the move, 0 - neutral case, -1 - if the move is against the constraint.
+        """
+
+        # Create a deep copy of the tally scores, to find out the updated scores after this move will be played.
+        temp_tally = copy.deepcopy(self.curr_constraint_tally)
+
+        # Place the card on the board, and compute the impact on tally scores.
+        temp_state = copy.deepcopy(state)
+        temp_state[_card_placement] = _card
+
+        # call update_tally function to get new scores after seeing what gets affected by this move.
+        print("Current Tally:", temp_tally)
+        self.update_tally(temp_state, temp_tally)
+        print("New Tally after the move:", temp_tally)
+
+        # Find the difference in the scores after making the play to the current scores without playing the card, and give scores accordingly.
+        score_difference = 0
+        for (temp_const, temp_score), (_const, _score) in zip(temp_tally.items(), self.curr_constraint_tally.items()):
+            score_difference += temp_score - _score
+
+        return score_difference
+
+    def find_best_play(self, cards, constraints, state, territory):
+        """Function that returns best possible card play based on the current state of game. Current depth is set to just one.
+
+        Args:
+            score (int): Your total score including current turn
+            cards (list): A list of letters you have been given at the beginning of the game
+            state (list(list)): The current letters at every hour of the 24 hour clock
+            territory (list(int)): The current occupiers of every slot in the 24 hour clock. 1,2,3 for players 1,2 and 3. 4 if position unoccupied.
+            constraints(list(str)): The constraints assigned to the given player
+
+        Returns:
+            _hour(int): slot from 1-12
+            _card(str): letter to be played at that slot
+        """
+        # Iterate through all the cards and all the potential slots for the card to be places. Pick the slot with highest score obtained.
+        max_score, _card, _hour = float("-inf"), None, None
+        for curr_card in cards:
+            for curr_position in np.where(np.array(territory) == 4)[0]:
+                curr_score = self.scoring_func(curr_card, curr_position, state)
+                if curr_score > max_score:
+                    max_score = curr_score
+                    _card = curr_card
+                    _hour = curr_position
+
+        return _card, _hour
+
+
+    # def play(self, cards: list[str], constraints: list[str], state: list[str], territory: list[int]) -> Tuple[int, str]:
     def play(self, cards, constraints, state, territory):
         """Function which based n current game state returns the distance and angle, the shot must be played
 
@@ -234,31 +383,47 @@ class Player:
         Returns:
             Tuple[int, str]: Return a tuple of slot from 1-12 and letter to be played at that slot
         """
-        # Do we want intermediate scores also available? Confirm pls
         
-        # print("\n***\n")
-        
-        # print("State: ", state)
-        # print("Territory: ", territory)
-        # print("Current Constraint Tally", self.curr_constraint_tally)
+        print("State:", state)
+        print("Territory:", territory)
 
-        max_iter = 1000
-        for i in range(max_iter):
+        # Update the global tally variable for smooth game play in subsequent computations
+        print("Tally before ", self.curr_constraint_tally)
+        self.update_tally(state, self.curr_constraint_tally)
+        print("Tally now ", self.curr_constraint_tally)
 
-            letter = self.rng.choice(cards)
-            territory_array = np.array(territory)
-            available_hours = np.where(territory_array == 4)
-            hour = self.rng.choice(available_hours[0])          # because np.where returns a tuple containing the array, not the array itself
+        letter, hour = self.find_best_play(cards, constraints, state, territory)
 
+        """
+        letter = self.rng.choice(cards)
+        territory_array = np.array(territory)
+        available_hours = np.where(territory_array == 4)
+        hour = self.rng.choice(available_hours[0])          # because np.where returns a tuple containing the array, not the array itself\
+        """
+
+        # Test the scoring function on this move!
+        print(f"~~~~~~~~~~~~~Current move is to play card {letter} at position {hour}~~~~~~~~~~~")
+        score_diff = self.scoring_func(letter, hour, state)
+        print("Score difference", score_diff)
+
+        """
             # Check if current random play leads to any constraint's situation improving
             is_satisfied = self.is_constraint_satisfied(letter, hour, constraints, state, territory)
             if is_satisfied == 1:
                 break
-        
+        """
         # print("~~~~~~~~~~~Is Satisfied: ", is_satisfied, "~~~~~~~~~~~~~~~")
 
         hour = hour % 12 if hour % 12 != 0 else 12
         return hour, letter
+
+def num_letters(constraint:list, _cards: list): #count number of letters in constraint 
+    num_letters = 0 
+    for letter in constraint:
+        if letter in _cards:
+            num_letters +=1 
+    return num_letters
+
 def probability_calculator(num_letters, constraint_length):
     prob_yes_nol = 0.45
     prob_yes_onel = 0.687894539465445
@@ -284,8 +449,6 @@ def probability_calculator(num_letters, constraint_length):
         probability = prob_5letter(num_letters,prob_yes_nol,prob_yes_onel,prob_yes_twol)
     return probability 
 
-
-
 def prob_3letter(num_letters,prob_yes_nol,prob_yes_onel,prob_yes_twol):
   if num_letters ==0:
     prob = (prob_yes_nol**3)
@@ -298,6 +461,7 @@ def prob_3letter(num_letters,prob_yes_nol,prob_yes_onel,prob_yes_twol):
   else: #have all 3
     prob = 1
   return prob
+
 #using number of letters you have -> combine the number
 #if 1 letter -> 2
 def prob_4letter(num_letters,prob_yes_nol,prob_yes_onel,prob_yes_twol):
@@ -315,6 +479,7 @@ def prob_4letter(num_letters,prob_yes_nol,prob_yes_onel,prob_yes_twol):
   else: #have all 4
     prob = 1 #as long as if you are pos 2/3 yo pick where 10 open slots remain #not exact cause up to 11 could be played before you go
   return prob
+
 #five_letter
 def prob_5letter(num_letters,prob_yes_nol,prob_yes_onel,prob_yes_twol):
   if num_letters ==0:
