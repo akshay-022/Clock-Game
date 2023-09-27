@@ -263,15 +263,15 @@ class Player:
                     break
             return chosen_hour, chosen_letter
         if discard_letters:
-            print("DISCARD")
+            # print("DISCARD")
             chosen_letter = self.rng.choice(discard_letters)
             reserved_hours = self.find_reservations(clock_letters, active_constraints)
             if len(reserved_hours) > 0:
-                print("reserved_hours", reserved_hours)
-                print("available_hours", available_hours)
+                # print("reserved_hours", reserved_hours)
+                # print("available_hours", available_hours)
                 for hour in reserved_hours:
                     if hour in available_hours[0]:
-                        print("RESERVED")
+                        # print("RESERVED")
                         chosen_hour = hour
                         break
         else:  # If there's no discard, then we have to play a useful, starting from the shortest constraint
