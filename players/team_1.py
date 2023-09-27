@@ -32,14 +32,38 @@ class Player:
             list[int]: Return the list of constraint cards that you wish to keep. (can look at the default player logic to understand.)
         """
         final_constraints = []
+        twoLetterConstraints = []
+        threeLetterConstraints = []
+        fourLetterConstraints = []
+        fiveLetterConstraints = []
 
+        #only parse first 100 constraints to avoid crashing with time complexity 
+        #if len(constraints) > 100:
+            #constraints = constraints[:100]
+        
+        #separate constraints by size 
         for constraint in constraints: 
-        #check every constraint to make sure we have atleast 1 letter in every pair in constraint
-            if len(constraint) > 3: continue 
-            if self.__checkPairs(cards, constraint): 
-                final_constraints.append(constraint)
+            if not self.__checkPairs(cards, constraint): continue 
+            if len(constraint) == 3: 
+                twoLetterConstraints.append(constraint)
+            elif len(constraint) == 5: 
+                threeLetterConstraints.append(constraint)
+            elif len(constraint) == 7: 
+                fourLetterConstraints.append(constraint)
+            else: 
+                fiveLetterConstraints.append(constraint)
 
-        self.__organizeCards(cards, final_constraints)
+        if len(twoLetterConstraints) > 10: 
+            twoLetterConstraints = self.__chooseTwoLetterConstraints(twoLetterConstraints, threeLetterConstraints, fourLetterConstraints, fiveLetterConstraints, cards)
+        if len(threeLetterConstraints) > 5: 
+            threeLetterConstraints = self.__chooseThreeLetterConstraints(twoLetterConstraints, threeLetterConstraints, cards)
+        if len(fourLetterConstraints) > 3: 
+            fourLetterConstraints = self.__chooseFourLetterConstraints(twoLetterConstraints, fourLetterConstraints)
+        if len(fiveLetterConstraints) > 2: 
+            fiveLetterConstraints = self.__chooseFiveLetterConstraints(twoLetterConstraints, fiveLetterConstraints, cards)
+        final_constraints = twoLetterConstraints + threeLetterConstraints + fourLetterConstraints + fiveLetterConstraints
+
+        self.__getDiscard(cards, final_constraints)
         return final_constraints
 
 
@@ -62,42 +86,56 @@ class Player:
         hour = None          
         territory_array = np.array(territory)
         available_hours = np.where(territory_array == 4)
-        #parse all constraints
-        for constraint in constraints: 
-            #if we have all letters then play this constraint
-            if self.__haveAllLetters(cards, constraint): 
-                letter = constraint[0]
-                self.queue.append(constraint[2])
+        #parse all constraints from smallest to biggest
+
+        constraints.sort(reverse = True)
+        for constraint0 in constraints: 
+            #if we have a good play with letter AND hour, stop checking constraints 
+            if (letter is not None or self.queue != []) and hour is not None:  
                 break
-            elif len(constraint) == 3: 
+            #if we have all letters, queue them
+            if self.__readyToPlay(cards, state, constraint0): 
+                self.__queueAllLetters(cards, constraint0)
+                if self.__lettersMissing(cards, constraint0) == 0: 
+                    break
+            else: 
+                #if constraint is not ready to be played, continue (play from queue or discard)
+                continue
+            #split constraint into smaller 2 letter constraints 
+            #ex. U<O<C will become ["U<O", "O<C"]
+            for constraint in self.__getSmallerConstraints(constraint0):
                 #2 letter constraint where we have 1 letter, check that other letter was played 
                 playedAt = self.__wasPlayedAt(constraint[2], state)
                 if constraint[0] in cards and playedAt is not None: 
-                    letter = constraint[0]
-                    if letter in self.queue: self.queue.remove(letter)
                     hour = self.__chooseHour(playedAt, state, False)
                     break
                 playedAt = self.__wasPlayedAt(constraint[0], state)
                 if constraint[2] in cards and playedAt is not None: 
-                    letter = constraint[2]
-                    if letter in self.queue: self.queue.remove(letter)
                     hour = self.__chooseHour(playedAt, state, True)
-                    break
+                    break 
+
+        #if only 1 card left and we don't have good play just play randomly
+        if len(cards) == 1: 
+            return self.__chooseRandomHour(state, available_hours), cards[0]
+                    
         #play next in queue if not empty
         if letter is None and self.queue != []: 
-            letter = self.queue.pop()
+            letter = self.queue.pop(0)
         #play from discard if not empty 
         elif letter is None: 
             if self.discardPile != []:
                 letter = self.rng.choice(self.discardPile)
                 self.discardPile.remove(letter)
-            else: letter = self.rng.choice(cards)
+            else: 
+                nextPlay = self.__chooseNextBestPlay(state, cards, constraints)
+                if nextPlay is not None: hour, letter = nextPlay
         
         #territory_array = np.array(territory)
         #available_hours = np.where(territory_array == 4)
         if hour is None:   
-            hour = self.rng.choice(available_hours[0])
-            hour = hour%12 if hour%12!=0 else 12
+            hour = self.__chooseRandomHour(state, available_hours)
+        if letter is None: 
+            letter = self.rng.choice(cards)
         return hour, letter
     
     def __checkPairs(self, cards, constraint): 
@@ -113,8 +151,88 @@ class Player:
     #check if we have atleast 1 letter in pair of letters 
         return letter1 in cards or letter2 in cards
     
+    #choose 10 best 2 letter constraints 
+    def __chooseTwoLetterConstraints(self, twoLetterConstraints, threeLetterConstraints, fourLetterConstraints, fiveLetterConstraints, cards):
+        finalConstraints = []
+        leftover = []
+        for constraint in twoLetterConstraints: 
+            #prioritize constraints that are part of larger constraint 
+            if self.__isInLargerConstraint(constraint, fiveLetterConstraints): 
+                finalConstraints.insert(0, constraint)
+            elif self.__isInLargerConstraint(constraint, fourLetterConstraints): 
+                finalConstraints.insert(0, constraint)
+            elif self.__isInLargerConstraint(constraint, threeLetterConstraints): 
+                finalConstraints.insert(0, constraint)
+            #next priority is we have both letters
+            elif constraint[0] in cards and constraint[2] in cards:
+                finalConstraints.append(constraint)
+            else: 
+                leftover.append(constraint)
+        #only keep first 10 prioritized constraints
+        if len(finalConstraints) > 10: return finalConstraints[:11]
+        elif len(finalConstraints) == 10: return finalConstraints
+        else: return finalConstraints + leftover[:(10-len(finalConstraints))]
+
+    #choose 5 best 3 letter constraints 
+    def __chooseThreeLetterConstraints(self, twoLetterConstraints, threeLetterConstraints, cards): 
+        finalConstraints = []
+        leftover = []
+        for constraint in threeLetterConstraints: 
+            #prioritize if it has a smaller constraint inside that we're keeping 
+            if self.__hasSmallerConstraint(twoLetterConstraints, constraint): 
+                finalConstraints.insert(0, constraint)
+            #next prioritize if we have 2 letters
+            elif self.__lettersMissing(cards, constraint) == 2: 
+                finalConstraints.append(constraint)
+            else: 
+                leftover.append(constraint)
+        if len(finalConstraints) > 5: return finalConstraints[:5]
+        elif len(finalConstraints) == 5: return finalConstraints
+        else: return finalConstraints + leftover[:5-(len(finalConstraints))]
+
+    #choose 3 best 4 letter constraints 
+    def __chooseFourLetterConstraints(self, twoLetterConstraints, fourLetterConstraints): 
+        finalConstraints = []
+        for constraint in fourLetterConstraints: 
+            #prioritize if it has a smaller constraint inside that we're keeping 
+            if self.__hasSmallerConstraint(twoLetterConstraints, constraint): 
+                finalConstraints.insert(0, constraint)
+            else: 
+                finalConstraints.append(constraint)
+        if len(finalConstraints) > 3: return finalConstraints[:3]
+        else: return finalConstraints
+    
+    def __chooseFiveLetterConstraints(self, twoLetterConstraints, fiveLetterConstraints, cards): 
+        finalConstraints = []
+        leftover = []
+        for constraint in fiveLetterConstraints: 
+            #prioritize if it has a smaller constraint inside that we're keeping 
+            if self.__hasSmallerConstraint(twoLetterConstraints, constraint): 
+                finalConstraints.insert(0, constraint)
+            #next prioritize if we have 3 letters 
+            elif self.__lettersMissing(cards, constraint) == 2: 
+                finalConstraints.append(constraint)
+            else: leftover.append(constraint)
+        if len(finalConstraints) > 2: return finalConstraints[:2]
+        elif len(finalConstraints) == 2: return finalConstraints
+        else: return finalConstraints + leftover[:(2-len(finalConstraints))]
+
+    def __hasSmallerConstraint(self, smallerConstraints, largerConstraint): 
+        largerConstraint = "".join(largerConstraint)
+        for constraint in smallerConstraints: 
+            if "".join(constraint) in largerConstraint:
+                return True 
+        return False
+    
+    def __isInLargerConstraint(self, smallerConstraint, largerConstraints): 
+        smallerConstraint = "".join(smallerConstraint)
+        for constraint in largerConstraints: 
+            if smallerConstraint in "".join(constraint):
+                return True 
+        return False
+    
     #create discard pile 
-    def __organizeCards(self, cards, constraints):
+    def __getDiscard(self, cards, constraints):
         for card in cards: 
             if self.__isDiscard(card, constraints): 
                 self.discardPile.append(card)
@@ -126,13 +244,31 @@ class Player:
         return True 
 
     #check if we have all letters in constraint
-    def __haveAllLetters(self, cards, constraint): 
+    def __lettersMissing(self, cards, constraint): 
         i = 0 
+        lettersMissing = 0
         while i < len(constraint):  
             if constraint[i] not in cards: 
-                return False
+                lettersMissing += 1
             i+=2
-        return True
+        return lettersMissing
+    
+    #check if all letters in constraint are either in our cards our on the board 
+    def __readyToPlay(self, cards, state, constraint): 
+        i = 0 
+        while i < len(constraint): 
+            if constraint[i] not in cards and constraint[i] not in state:
+                return False
+            i += 2 
+        return True 
+    
+    #queue all letters that we have 
+    def __queueAllLetters(self, cards, constraint): 
+        i = len(constraint) - 1
+        while i >= 0: 
+            if constraint[i] in cards and constraint[i] not in self.queue: 
+                self.queue.insert(0, constraint[i])
+            i -= 2 
     
     #check if letter was played
     def __wasPlayedAt(self, letter, state): 
@@ -146,28 +282,66 @@ class Player:
         if hourPlayed < 12: 
             hourPlayed = hourPlayed + 12 
         if clockwise:  
-            i = 1
-            while i < 6: 
+            i = 5
+            while i > 0: 
                 hour = (hourPlayed+i)%24
                 if state[hour] == 'Z': return hour
                 complimentary = self.__getComplimentary(hour)
                 if state[complimentary] == 'Z': return complimentary
-                i += 1 
+                i -= 1 
         else: 
-            i = 1 
-            while i < 6: 
+            i = 5 
+            while i > 0: 
                 hour = (hourPlayed-i)%24
                 if state[hour] == 'Z': return hour 
                 complimentary = self.__getComplimentary(hour)
                 if state[complimentary] == 'Z': return complimentary
-                i += 1
+                i -= 1
 
+    def __chooseNextBestPlay(self, state, cards, constraints): 
+        for constraint0 in constraints: 
+            for constraint in self.__getSmallerConstraints(constraint0): 
+                playedAt = self.__wasPlayedAt(constraint[0], state)
+                if playedAt is not None and constraint[2] in cards: 
+                    hour = self.__chooseHour(playedAt, state, True)
+                    letter = constraint[2]
+                    if hour is None or letter is None: 
+                        return None 
+                    else: return hour, letter
+                playedAt = self.__wasPlayedAt(constraint[2], state)
+                if playedAt is not None and constraint[0] in cards: 
+                    hour = self.__chooseHour(playedAt, state, False)
+                    letter = constraint[0]
+                    if hour is None or letter is None:
+                        return None
+                    else: return hour, letter
 
+    #for when we choose from discard or random 
+    #instead of getting random hour we want to play at an hour that has both slots empty if possible 
+    def __chooseRandomHour(self, state, availableHours): 
+        i = 0 
+        while i < 12: 
+            if state[i] == 'Z' and state[i+12] == 'Z': return i 
+            i += 1
+        hour = self.rng.choice(availableHours[0])
+        return hour%12 if hour%12!=0 else 12
+        
+
+    #if hour == 0, return 12 and viceversa
     def __getComplimentary(self, hour):
         if hour >= 12: 
             return hour%12
         else: 
             return hour+12
+    
+    #split larger constraints up into groups of 2 letter constraints 
+    def __getSmallerConstraints(self, constraint): 
+        i = 0 
+        finalConstraints =  []
+        while i < len(constraint)-1: 
+            finalConstraints.append(constraint[i] + '<' + constraint[i+2])
+            i += 2
+        return finalConstraints
 
         
 
