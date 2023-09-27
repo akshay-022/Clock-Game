@@ -36,10 +36,6 @@ class Player:
         threeLetterConstraints = []
         fourLetterConstraints = []
         fiveLetterConstraints = []
-
-        #only parse first 100 constraints to avoid crashing with time complexity 
-        #if len(constraints) > 100:
-            #constraints = constraints[:100]
         
         #separate constraints by size 
         for constraint in constraints: 
