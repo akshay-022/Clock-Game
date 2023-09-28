@@ -23,6 +23,7 @@ import copy
 import argparse
 from clock_game import clockGame
 from copy import deepcopy
+from tqdm import tqdm
 
 def initialise_player(rng, player_px):
     player_instance = None
@@ -110,7 +111,7 @@ if __name__ == '__main__':
             constraints[2] = player_instance_3.choose_discard(options_letter[2],constraints[2])
             players_init_grid.append([options_letter, constraints, player_instance_1, player_instance_2, player_instance_3])
         print(players_init_grid)
-        for comb in combs:
+        for comb in tqdm(combs):
             args.seed = seed
             player_0_letters = deepcopy(players_init_grid[comb[0]-1][0][0])
             player_0_constraints = deepcopy(players_init_grid[comb[0]-1][1][0])
