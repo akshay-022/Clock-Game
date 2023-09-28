@@ -24,10 +24,11 @@ import argparse
 
 class  clockGame():
     #def __init__(self, args):
-    def __init__(self, args):
+    def __init__(self, args, **kwargs):
         self.use_gui = True
         self.rng = np.random.default_rng(int(args.seed))
         self.max_time = constants.timeout
+        self.is_tournament = False
         with open("log_moves.txt", 'w' ) as f:
             f.write("The game.....has started.")
             f.write('\n')
@@ -59,26 +60,35 @@ class  clockGame():
         self.constraints_after_discarding = None
         self.indicator_gui_auto = 0
         self.constraints_inputted = [False, False, False]  #To see if the user entered constraint choice has been recorded
-
-        shuffled_letters = list(self.rng.choice(list(string.ascii_uppercase)[:24], 24, replace = False))
-        self.options_letter = [shuffled_letters[:8],shuffled_letters[8:16],shuffled_letters[16:24]]
-        self.constraints = [[],[],[]]
-        for j in range(3):
-            constraint_counter = 0
-            const_exceeded = False
-            while True:
-                for i in range(2,6):            
-                    constraints_choice = self.rng.choice(list(string.ascii_uppercase)[:24], i, replace = False)     #I am preventing repetition of letters here since it makes some constraints impossible
-                    delim = "<"
-                    res = reduce(lambda x, y: str(x) + delim + str(y), constraints_choice)
-                    constraint_string = str(res)
-                    constraint_counter = constraint_counter + 1
-                    if constraint_counter <= self.no_of_constraints:
-                        self.constraints[j].append(constraint_string)
-                    else:
-                        const_exceeded = True
-                if const_exceeded == True:
-                    break
+        if "is_tournament" in kwargs.keys():
+            self.is_tournament = kwargs["is_tournament"]
+            self.player_0 = kwargs["player_0"]
+            self.player_1 = kwargs["player_1"]
+            self.player_2 = kwargs["player_2"]
+            self.constraints = kwargs["constraints"]
+            self.options_letter = kwargs["options_letter"]
+            self.player_instances = kwargs["player_instances"]
+        if not self.is_tournament:
+            shuffled_letters = list(self.rng.choice(list(string.ascii_uppercase)[:24], 24, replace = False))
+            self.options_letter = [shuffled_letters[:8],shuffled_letters[8:16],shuffled_letters[16:24]]
+            self.constraints = [[],[],[]]
+            for j in range(3):
+                constraint_counter = 0
+                const_exceeded = False
+                while True:
+                    for i in range(2,6):            
+                        constraints_choice = self.rng.choice(list(string.ascii_uppercase)[:24], i, replace = False)     #I am preventing repetition of letters here since it makes some constraints impossible
+                        delim = "<"
+                        res = reduce(lambda x, y: str(x) + delim + str(y), constraints_choice)
+                        constraint_string = str(res)
+                        constraint_counter = constraint_counter + 1
+                        if constraint_counter <= self.no_of_constraints:
+                            self.constraints[j].append(constraint_string)
+                        else:
+                            const_exceeded = True
+                    if const_exceeded == True:
+                        break
+        
         self.initial_constraints = copy.deepcopy(self.constraints)
 
 
@@ -251,6 +261,39 @@ class  clockGame():
             f.write('\n')
             f.write("Total time taken by player 1, 2 and 3 to decide moves : " + str(total_time_taken_cumulative))
             f.write('\n')
+        if self.is_tournament:
+            with open("tournament_results_"+ str(constants.number_of_constraints_pp) +".pkl","rb" ) as f:
+                tournament_results = pkl.load(f)
+            with open("tournament_results_"+ str(constants.number_of_constraints_pp) +".pkl","wb" ) as f:
+                player_1_log = [total_time_taken_cumulative[0], self.satisfied_constraints[0], unsatisfied_constraints[0]]
+                player_2_log = [total_time_taken_cumulative[1], self.satisfied_constraints[1], unsatisfied_constraints[1]]
+                player_3_log = [total_time_taken_cumulative[2], self.satisfied_constraints[2], unsatisfied_constraints[2]]
+                scores_array = np.array(self.scores)
+                temp = scores_array.argsort()
+
+                rank = [0,0,0]
+                if scores_array[temp[1]]==scores_array[temp[2]] and scores_array[temp[0]]==scores_array[temp[2]]:
+                    rank[temp[1]] = 1
+                    rank[temp[2]] = 1
+                    rank[temp[0]] = 1
+                elif scores_array[temp[1]]==scores_array[temp[2]]:
+                    rank[temp[1]] = 1
+                    rank[temp[2]] = 1
+                    rank[temp[0]] = 3
+                elif scores_array[temp[1]]==scores_array[temp[0]]:
+                    rank[temp[1]] = 2
+                    rank[temp[2]] = 1
+                    rank[temp[0]] = 2
+                else:
+                    rank[temp[1]] = 2
+                    rank[temp[2]] = 1
+                    rank[temp[0]] = 3
+
+                player_types = [self.player_0, self.player_1, self.player_2]
+
+                tournament_results.append([player_types, self.scores, rank, player_1_log, player_2_log, player_3_log])
+                pkl.dump(tournament_results, f)
+            
         with open("summary_log.txt", 'w') as f:
             f.write("Final result is as follows : ")
             f.write('\n')
@@ -271,7 +314,7 @@ class  clockGame():
                 pkl.dump(self.clockapp_instance, f)
             #print(self.clockapp_instance['game_actions'])
         #self.is_game_ended = True           #This will ensure the program loop does not continue further.
-        exit(1)
+        #exit(1)
 
 
     def convert_student_hour_to_mine(self, student_hour):
@@ -355,7 +398,7 @@ class  clockGame():
                         break       
                     
                     if 0 in auto_players:
-                        player_0 = self.clockapp_instance["player_0"]
+                        self.player_0 = self.clockapp_instance["player_0"]
                         choose_start = float(time.time())
                         self.constraints[0] = self.player_instances[0].choose_discard(self.options_letter[0],self.constraints[0])
                         choose_end = float(time.time())
@@ -363,7 +406,7 @@ class  clockGame():
                         self.constraints_inputted[0] = True
                         self.auto_play(0)
                     if 0 in auto_players and 1 in auto_players:
-                        player_1 = self.clockapp_instance["player_1"]
+                        self.player_1 = self.clockapp_instance["player_1"]
                         choose_start = float(time.time())
                         self.constraints[1] = self.player_instances[1].choose_discard(self.options_letter[1],self.constraints[1])
                         choose_end = float(time.time())
@@ -371,7 +414,7 @@ class  clockGame():
                         self.constraints_inputted[1] = True
                         self.auto_play(1)
                     if 0 in auto_players and 1 in auto_players and 2 in auto_players:
-                        player_2 = self.clockapp_instance["player_2"]
+                        self.player_2 = self.clockapp_instance["player_2"]
                         choose_start = float(time.time())
                         self.constraints[2] = self.player_instances[2].choose_discard(self.options_letter[2],self.constraints[2])
                         choose_end = float(time.time())
@@ -503,32 +546,42 @@ class  clockGame():
         if (self.use_gui and self.indicator_gui_auto == 1) or not self.use_gui:
             if not self.use_gui:        #If this is the no_gui case
                 self.initial_constraints = copy.deepcopy(self.constraints)  #since I am going to change constraints very soon
-                print("Choose player 1 : 0 for default player, 1/2/3..11 for p1/p2/p3...")
-                player_0 = input()
-                self.initialise_player(int(player_0), 0)
-                self.player_type.append(int(player_0))
-                choose_start = float(time.time())
-                self.constraints[0] = self.player_instances[0].choose_discard(self.options_letter[0],self.constraints[0])
-                choose_end = float(time.time())
-                self.time_choose[0] = choose_end - choose_start
-                #self.logger.debug("No GUI flag specified")
-                print("Choose player 2 : 0 for default player, 1/2/3..11 for p1/p2/p3...")
-                player_1 = input()
-                self.initialise_player(int(player_1), 1)
-                self.player_type.append(int(player_1))
-                choose_start = float(time.time())
-                self.constraints[1] = self.player_instances[1].choose_discard(self.options_letter[1],self.constraints[1])
-                choose_end = float(time.time())
-                self.time_choose[1] = choose_end - choose_start
-                print("Choose player 3 : 0 for default player, 1/2/3..11 for p1/p2/p3...")
-                player_2 = input()
-                self.initialise_player(int(player_2), 2)
-                self.player_type.append(int(player_2))
-                choose_start = float(time.time())
-                self.constraints[2] = self.player_instances[2].choose_discard(self.options_letter[2],self.constraints[2])
-                choose_end = float(time.time())
-                self.time_choose[2] = choose_end - choose_start
-                self.options_hour = list(range(24))
+                if not self.is_tournament:
+                    print("Choose player 1 : 0 for default player, 1/2/3..11 for p1/p2/p3...")
+                    self.player_0 = input()
+                    self.initialise_player(int(self.player_0), 0)
+                    self.player_type.append(int(self.player_0))
+                    choose_start = float(time.time())
+                    self.constraints[0] = self.player_instances[0].choose_discard(self.options_letter[0],self.constraints[0])
+                    choose_end = float(time.time())
+                    self.time_choose[0] = choose_end - choose_start
+
+                    print("Choose player 2 : 0 for default player, 1/2/3..11 for p1/p2/p3...")
+                    self.player_1 = input()
+                    self.initialise_player(int(self.player_1), 1)
+                    self.player_type.append(int(self.player_1))
+                    choose_start = float(time.time())
+                    self.constraints[1] = self.player_instances[1].choose_discard(self.options_letter[1],self.constraints[1])
+                    choose_end = float(time.time())
+                    self.time_choose[1] = choose_end - choose_start
+                
+                    print("Choose player 3 : 0 for default player, 1/2/3..11 for p1/p2/p3...")
+                    self.player_2 = input()
+                    self.initialise_player(int(self.player_2), 2)
+                    self.player_type.append(int(self.player_2))
+                    choose_start = float(time.time())
+                    self.constraints[2] = self.player_instances[2].choose_discard(self.options_letter[2],self.constraints[2])
+                    choose_end = float(time.time())
+                    self.time_choose[2] = choose_end - choose_start
+                    self.options_hour = list(range(24))
+                
+                else:
+                    #Have to copy over player instances from tournament.py because choosing cards changes state of instances
+                    self.player_type.append(int(self.player_0))
+                    self.player_type.append(int(self.player_1))
+                    self.player_type.append(int(self.player_2))
+                    self.options_hour = list(range(24))
+
             else:   #if this is the gui but complete autoplay case
                 self.initial_constraints = copy.deepcopy(self.constraints)
                 choose_start = float(time.time())
